@@ -1,4 +1,4 @@
-# Invisible Drum Set
+# E155 Final Project - Invisible Drum Set
 
 ## Introduction
 This project is a simulation of a drum set using an Arduino Nano and the BNO055 IMU sensor. It allows users to play drums without a physical drum set. The project is primarily developed in C for a course requirement that emphasized writing all libraries from scratch.
@@ -24,7 +24,7 @@ This project is a simulation of a drum set using an Arduino Nano and the BNO055 
 
 ## Further Development
 - The latency is not bad but it can be decreased. The python program playing the samples can probably be improved.
-- The conditional logic for determining which sound to play in “main.c” can be fine-tuned and optimized. Currently it is tuned to my left handed playing style.
+- The conditional logic for determining which sound to play in "main.c" can be fine-tuned and optimized. Currently it is tuned to my left handed playing style.
 - Velocity sensitivity can be added if desired. It requires changing the way communication is handled between the arduino and the python program.
 - Include more error handling.
 - Enhancements or replacement of the custom libraries I created could improve the project's maintainability.
