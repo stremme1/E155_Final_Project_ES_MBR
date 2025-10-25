@@ -5,6 +5,10 @@
 
 #include "STM32L432KC.h"
 #include "gesture_recognition.h"
+#include "spi_handler.h"
+
+// External system_tick variable (defined in main.c)
+extern volatile uint32_t system_tick;
 
 // SPI configuration for FPGA communication
 #define FPGA_CS_PIN PA11  // Chip select for FPGA
@@ -20,6 +24,23 @@ static uint16_t rx_count = 0;
 
 // Gesture data structure
 gesture_data_t received_gesture;
+
+// Input validation functions (moved before usage)
+float validate_angle(int16_t raw_angle) {
+    // Validate angle is within reasonable range
+    if (raw_angle < -180 || raw_angle > 180) {
+        return 0.0f;  // Return safe default
+    }
+    return (float)raw_angle;
+}
+
+int16_t validate_gyro(int16_t raw_gyro) {
+    // Validate gyro is within reasonable range
+    if (raw_gyro < -32768 || raw_gyro > 32767) {
+        return 0;  // Return safe default
+    }
+    return raw_gyro;
+}
 
 void spi_init(void) {
     // Initialize SPI using Lab 6 implementation
@@ -94,22 +115,7 @@ gesture_data_t spi_receive_gesture_data(void) {
     return result;
 }
 
-// Input validation functions
-float validate_angle(int16_t raw_angle) {
-    // Validate angle is within reasonable range
-    if (raw_angle < -180 || raw_angle > 180) {
-        return 0.0f;  // Return safe default
-    }
-    return (float)raw_angle;
-}
-
-int16_t validate_gyro(int16_t raw_gyro) {
-    // Validate gyro is within reasonable range
-    if (raw_gyro < -32768 || raw_gyro > 32767) {
-        return 0;  // Return safe default
-    }
-    return raw_gyro;
-}
+// Input validation functions moved to top of file
 
 void spi_send_record_command(uint8_t sound_id, gesture_data_t gesture) {
     // Send record command to FPGA using Lab 6 SPI pattern
@@ -120,10 +126,12 @@ void spi_send_record_command(uint8_t sound_id, gesture_data_t gesture) {
     spiSendReceive(sound_id);
     spiSendReceive((gesture.timestamp >> 8) & 0xFF);
     spiSendReceive(gesture.timestamp & 0xFF);
-    spiSendReceive((gesture.yaw1 >> 8) & 0xFF);
-    spiSendReceive(gesture.yaw1 & 0xFF);
-    spiSendReceive((gesture.pitch1 >> 8) & 0xFF);
-    spiSendReceive(gesture.pitch1 & 0xFF);
+    int16_t yaw1_int = (int16_t)gesture.yaw1;
+    int16_t pitch1_int = (int16_t)gesture.pitch1;
+    spiSendReceive((yaw1_int >> 8) & 0xFF);
+    spiSendReceive(yaw1_int & 0xFF);
+    spiSendReceive((pitch1_int >> 8) & 0xFF);
+    spiSendReceive(pitch1_int & 0xFF);
     
     digitalWrite(FPGA_CS_PIN, PIO_HIGH);
 }
@@ -155,16 +163,20 @@ void spi_send_gesture_data(gesture_data_t gesture) {
     
     // Send gesture data
     spiSendReceive(0x04);  // Gesture data command
-    spiSendReceive((gesture.yaw1 >> 8) & 0xFF);
-    spiSendReceive(gesture.yaw1 & 0xFF);
-    spiSendReceive((gesture.pitch1 >> 8) & 0xFF);
-    spiSendReceive(gesture.pitch1 & 0xFF);
+    int16_t yaw1_int = (int16_t)gesture.yaw1;
+    int16_t pitch1_int = (int16_t)gesture.pitch1;
+    int16_t yaw2_int = (int16_t)gesture.yaw2;
+    int16_t pitch2_int = (int16_t)gesture.pitch2;
+    spiSendReceive((yaw1_int >> 8) & 0xFF);
+    spiSendReceive(yaw1_int & 0xFF);
+    spiSendReceive((pitch1_int >> 8) & 0xFF);
+    spiSendReceive(pitch1_int & 0xFF);
     spiSendReceive((gesture.gyro1_y >> 8) & 0xFF);
     spiSendReceive(gesture.gyro1_y & 0xFF);
-    spiSendReceive((gesture.yaw2 >> 8) & 0xFF);
-    spiSendReceive(gesture.yaw2 & 0xFF);
-    spiSendReceive((gesture.pitch2 >> 8) & 0xFF);
-    spiSendReceive(gesture.pitch2 & 0xFF);
+    spiSendReceive((yaw2_int >> 8) & 0xFF);
+    spiSendReceive(yaw2_int & 0xFF);
+    spiSendReceive((pitch2_int >> 8) & 0xFF);
+    spiSendReceive(pitch2_int & 0xFF);
     spiSendReceive((gesture.gyro2_y >> 8) & 0xFF);
     spiSendReceive(gesture.gyro2_y & 0xFF);
     spiSendReceive((gesture.gyro2_z >> 8) & 0xFF);
@@ -196,6 +208,6 @@ uint8_t spi_is_ready(void) {
 void spi_reset(void) {
     // Reset SPI in case of communication errors
     SPI1->CR1 &= ~SPI_CR1_SPE;  // Disable SPI
-    delay_ms(10);
+    delay_millis(TIM6, 10);
     SPI1->CR1 |= SPI_CR1_SPE;   // Re-enable SPI
 }

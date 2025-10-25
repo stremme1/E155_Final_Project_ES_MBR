@@ -35,6 +35,8 @@ typedef struct {
 
 // Mock register definitions
 #define SPI_SR_RXNE (1 << 0)
+#define SPI_SR_TXE (1 << 1)
+#define SPI_CR1_SPE (1 << 6)
 #define EXTI_PR_PR0 (1 << 0)
 #define EXTI_PR_PR1 (1 << 1)
 #define EXTI_PR_PR2 (1 << 2)

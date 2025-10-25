@@ -103,7 +103,7 @@ void generate_audio_timer(uint16_t frequency, uint16_t duration, uint8_t volume)
     TIM6->CR1 |= TIM_CR1_CEN;  // Enable timer
     
     // Wait for duration
-    delay_ms(duration);
+    delay_millis(TIM6, duration);
     
     // Stop timer
     TIM6->CR1 &= ~TIM_CR1_CEN;
@@ -137,7 +137,7 @@ void apply_audio_effects(sound_id_t sound_id, uint8_t reverb_level, uint8_t echo
     
     // Echo effect
     if (echo_level > 0) {
-        delay_ms(50);  // Echo delay
+        delay_millis(TIM6, 50);  // Echo delay
         generate_audio_tone(params->frequency, params->duration / 3, params->volume * echo_level / 100);
     }
 }
