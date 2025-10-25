@@ -1,0 +1,16 @@
+// STM32L432KC_FLASH.h
+// Header for FLASH functions
+
+#ifndef STM32L432KC_FLASH_H
+#define STM32L432KC_FLASH_H
+
+#include <stdint.h>
+// CMSIS include removed for standalone compilation
+
+///////////////////////////////////////////////////////////////////////////////
+// Function prototypes
+///////////////////////////////////////////////////////////////////////////////
+
+void configureFlash();
+
+#endif
