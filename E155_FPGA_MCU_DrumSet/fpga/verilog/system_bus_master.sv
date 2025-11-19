@@ -1,17 +1,14 @@
-// System Bus Master for iCE40 I2C Hardened IP
-// Implements System Bus protocol to communicate with I2C IP
+// System Bus Master - ULTRA-SIMPLIFIED FOR iCE40UP5K
+// Reduced from 6 states to 4 states
 // Author: E155 Final Project
 // Date: 2024
 
 module system_bus_master (
     input  logic        clk,
     input  logic        rst_n,
-    
-    // System Bus Interface
-    // Note: sb_clk is an input - clock is driven by top module
-    input  logic        sb_clk,     // System Bus clock (driven by top module)
-    output logic        sb_wr,      // 0=read, 1=write
-    output logic        sb_stb,     // Strobe
+    input  logic        sb_clk,
+    output logic        sb_wr,
+    output logic        sb_stb,
     output logic [7:0]  sb_addr,
     output logic [7:0]  sb_data_i,
     input  logic [7:0]  sb_data_o,
@@ -28,19 +25,14 @@ module system_bus_master (
     output logic        busy
 );
 
-    typedef enum logic [2:0] {
+    // ULTRA-SIMPLIFIED: Reduced from 6 to 4 states
+    typedef enum logic [1:0] {
         IDLE,
-        WRITE_ADDR,
-        WRITE_DATA,
-        READ_ADDR,
-        READ_DATA,
+        ACTIVE,      // Combined write/read active state
         WAIT_ACK
     } state_t;
     
     state_t state, next_state;
-    
-    // System Bus clock is provided as input (driven by top module)
-    // No assignment needed here
     
     // State machine
     always_ff @(posedge clk or negedge rst_n) begin
@@ -51,23 +43,18 @@ module system_bus_master (
         end
     end
     
-    // Next state logic
+    // Next state logic (simplified)
     always_comb begin
         next_state = state;
         case (state)
             IDLE: begin
                 if (start) begin
-                    if (write_en) begin
-                        next_state = WRITE_ADDR;
-                    end else begin
-                        next_state = READ_ADDR;
-                    end
+                    next_state = ACTIVE;
                 end
             end
-            WRITE_ADDR: next_state = WRITE_DATA;
-            WRITE_DATA: next_state = WAIT_ACK;
-            READ_ADDR: next_state = READ_DATA;
-            READ_DATA: next_state = WAIT_ACK;
+            ACTIVE: begin
+                next_state = WAIT_ACK;
+            end
             WAIT_ACK: begin
                 if (sb_ack) begin
                     next_state = IDLE;
@@ -76,9 +63,7 @@ module system_bus_master (
         endcase
     end
     
-    // Output logic
-    // System Bus protocol: Address and data must be stable when SBSTBi is asserted
-    // According to datasheet: SBSTBi is strobe signal, SBACKo is acknowledge
+    // Output logic (simplified)
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             sb_wr <= 0;
@@ -93,55 +78,31 @@ module system_bus_master (
             
             case (state)
                 IDLE: begin
-                    sb_stb <= 0;  // Always deassert strobe when idle
+                    sb_stb <= 0;
                     busy <= 0;
                     if (start) begin
                         busy <= 1;
                         sb_addr <= addr;
                         sb_wr <= write_en;
-                        // For writes, set data early
-                        if (write_en) begin
-                            sb_data_i <= data_in;
-                        end
-                        // Note: Don't assert strobe yet - wait for next state
+                        sb_data_i <= data_in;
                     end
                 end
-                WRITE_ADDR: begin
-                    // Address and data are already set, assert strobe
-                    sb_stb <= 1;
-                end
-                WRITE_DATA: begin
-                    // Keep strobe asserted, data already set
-                    sb_stb <= 1;
-                end
-                READ_ADDR: begin
-                    // Assert strobe with address
-                    sb_stb <= 1;
-                end
-                READ_DATA: begin
-                    // Keep strobe asserted, wait for data
-                    sb_stb <= 1;
+                ACTIVE: begin
+                    sb_stb <= 1;  // Assert strobe
                 end
                 WAIT_ACK: begin
-                    // Keep strobe asserted until acknowledge
+                    sb_stb <= 1;  // Keep strobe asserted
                     if (sb_ack) begin
-                        sb_stb <= 0;  // Deassert immediately when ACK received
+                        sb_stb <= 0;
                         if (!write_en) begin
                             data_out <= sb_data_o;
                         end
                         done <= 1;
                         busy <= 0;
-                    end else begin
-                        sb_stb <= 1;  // Keep strobe asserted while waiting
                     end
-                end
-                default: begin
-                    // Default case: ensure strobe is deasserted
-                    sb_stb <= 0;
                 end
             endcase
         end
     end
 
 endmodule
-
