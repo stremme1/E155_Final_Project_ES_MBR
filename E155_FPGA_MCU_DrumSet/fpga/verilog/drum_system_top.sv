@@ -10,7 +10,7 @@
 module drum_system_top (
     // Clock and Reset
     // For simulation: provide external clk
-    // For synthesis: can use HSOC internally (see clock generation below)
+    // For synthesis: uses HSOSC internally at 3MHz (see clock generation below)
     input  logic        clk_ext,      // External clock input (for simulation)
     input  logic        rst_n,
     
@@ -54,28 +54,20 @@ module drum_system_top (
 );
     
     // Clock generation: Use internal oscillator for synthesis, external for simulation
-    // This allows Questa simulation to work while using HSOC in hardware
+    // This allows Questa simulation to work while using HSOSC in hardware
     logic clk;
-    logic clk_osc;  // Declare outside ifdef for better compatibility
     
 `ifdef SIMULATION
     // For simulation: use external clock directly
     assign clk = clk_ext;
 `else
-    // For synthesis: use HSOC internal oscillator
-    // HSOC generates ~48MHz clock (actual frequency depends on device)
-    // Note: Some tools use HFOSC instead of HSOC - check your tool documentation
-    HSOC #(
-        .CLKHF_DIV("0b00")  // Divide by 1 (48MHz), use "0b01" for 24MHz, "0b10" for 12MHz, "0b11" for 6MHz
-    ) u_hfosc (
-        .CLKHFPU(1'b1),      // Power up
-        .CLKHFEN(1'b1),      // Enable
-        .CLKHF(clk_osc)      // Output clock
+    // HARDWARE CLOCK - HSOSC (ACTIVE FOR HARDWARE)
+    // CLKHF_DIV(2'b11) = divide by 16 to get 3MHz from 48MHz
+    HSOSC #(.CLKHF_DIV(2'b11)) hf_osc (
+        .CLKHFPU(1'b1), 
+        .CLKHFEN(1'b1), 
+        .CLKHF(clk)
     );
-    
-    // Optional: Add clock divider if needed for lower frequency
-    // For now, use oscillator directly
-    assign clk = clk_osc;
 `endif
 
     // Internal signals for IMU 1 (Right Hand)
@@ -100,10 +92,11 @@ module drum_system_top (
     
     // Debounce buttons
     // Adjust counter based on clock frequency
+    // For 3MHz (hardware): ~3000 counts = 1ms
     // For 48MHz: ~48000 counts = 1ms
     // For 16MHz: ~16000 counts = 1ms
     // For simulation: use smaller value for faster simulation
-    localparam DEBOUNCE_COUNT = 16000;  // Adjust based on actual clock frequency
+    localparam DEBOUNCE_COUNT = 3000;  // 1ms debounce at 3MHz (hardware clock)
     
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
