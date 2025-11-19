@@ -46,7 +46,7 @@ module i2c_driver_bno085 (
 
     // -------------------------------------------------------------------------
     // I2C prescale (example: 12 MHz -> 400 kHz)
-    // PRESCALE = Fclk / (4 * Fi2c)
+    // PRESCALE = Fclk / (4 * Fi2c)  -> p19  of datasheet
     //           12e6 / (4*400e3) = 7.5 ≈ 8
     // -------------------------------------------------------------------------
     localparam [9:0] PRESCALE = 10'd8;
@@ -54,7 +54,7 @@ module i2c_driver_bno085 (
     // -------------------------------------------------------------------------
     // Bus control signals
     // -------------------------------------------------------------------------
-    logic bus_go;
+    logic bus_go;  //bus access the cycle
     logic bus_read;
     logic bus_write;
 
@@ -64,10 +64,10 @@ module i2c_driver_bno085 (
     // Forward to actual SB signals
     always_comb begin
         // default inactive
-        sb_stb   = bus_go;
-        sb_wr    = bus_write;
-        sb_addr  = bus_addr;
-        sb_wdata = bus_data;
+        sb_stb   = bus_go; 		// start a system bus transaction now
+        sb_wr    = bus_write;	// 1write/0 read transaction
+        sb_addr  = bus_addr;	// which internal register you want to access (sbadri address)
+        sb_wdata = bus_data;	// 
     end
 
     // -------------------------------------------------------------------------
@@ -129,16 +129,20 @@ module i2c_driver_bno085 (
         // --------------------------------------------------------------
         // Write PRESCALE LSB
         // --------------------------------------------------------------
+		// the ice40 i2c needs 2 things before it can talk to the imu:
+		// 	1. prescaler> tells how fast to run SCL
+		//	2. enable bit: bit in a control register that says "turn on the i2c block"
+		//		These things live in three registers inside the i2c block? I2CBRLSB, I2CBRMSB, I2CCR1.
         S_RESET: begin
-            bus_go    = 1'b1;
-            bus_write = 1'b1;
-            bus_addr  = I2C_I2CBRLSB;
-            bus_data  = PRESCALE[7:0];
+            bus_go    = 1'b1;   //Doing the bus access now
+            bus_write = 1'b1;	// write cycle
+            bus_addr  = I2C_I2CBRLSB;	//targeting the prescaler LSB register
+            bus_data  = PRESCALE[7:0];	//writing low 8 bits of the prescaler value
             next      = S_PRESCALE_LSB_WAIT;
         end
 
         S_PRESCALE_LSB_WAIT: begin
-            if (sb_ack) begin
+            if (sb_ack) begin  //new bus transaction
                 bus_go    = 1'b1;
                 bus_write = 1'b1;
                 bus_addr  = I2C_I2CBRMSB;
@@ -158,9 +162,20 @@ module i2c_driver_bno085 (
         end
 
         S_ENABLE_WAIT: begin
-            if (sb_ack)
+            if (sb_ack)  		
                 next = S_IDLE;
         end
+
+        // --------------------------------------------------------------
+		//enable-bit write into I2CCR1 is done. The I2C hardware core is now configured and active.
+		// Now> i2c bus to do each loop:
+		// 1. start
+		// 2. send address + R bit (0x95 for BNO085 @0x4A)
+		// 3. imu acks 
+		// 4. Read 1 data byte from the IMU
+		// 5. Master NACKs 
+		// 6. Stop
+        // --------------------------------------------------------------
 
         // --------------------------------------------------------------
         // Idle → start next read
@@ -169,8 +184,8 @@ module i2c_driver_bno085 (
             // Write device address w/ read bit
             bus_go    = 1'b1;
             bus_write = 1'b1;
-            bus_addr  = I2C_I2CTXDR;
-            bus_data  = BNO_ADDR_READ;
+            bus_addr  = I2C_I2CTXDR; 	// Tx data register in the i2c core
+            bus_data  = BNO_ADDR_READ;	// writing 0x95
             next      = S_SEND_ADDR_WAIT;
         end
 
@@ -178,11 +193,11 @@ module i2c_driver_bno085 (
         // Send START and address
         // --------------------------------------------------------------
         S_SEND_ADDR_WAIT: begin
-            if (sb_ack) begin
+            if (sb_ack) begin 	// wait for TXDR write, then issue START + Write. 
                 bus_go    = 1'b1;
                 bus_write = 1'b1;
-                bus_addr  = I2C_I2CCMDR;
-                bus_data  = CMD_START_WRITE;
+                bus_addr  = I2C_I2CCMDR;	//command register
+                bus_data  = CMD_START_WRITE; // send start and send out the byte in TXDR
                 next      = S_ISSUE_READ_WAIT;
             end
         end
@@ -206,12 +221,13 @@ module i2c_driver_bno085 (
             bus_addr = I2C_I2CSR;
 
             if (sb_ack) begin
-                if (sb_rdata[2]) begin // TRRDY?
+                if (sb_rdata[2]) begin // TRRDY? -> Transmitter/receiver ready - its okay to issue another command or read/write a data register. 
+					//==1 -> core is done with the previous operation and ready for more.
                     // Now issue READ+NACK+STOP
                     bus_go    = 1'b1;
                     bus_write = 1'b1;
                     bus_addr  = I2C_I2CCMDR;
-                    bus_data  = CMD_READ_NACK_STOP;
+                    bus_data  = CMD_READ_NACK_STOP;	//send the NACK
                     next      = S_READ_BYTE;
                 end
             end
