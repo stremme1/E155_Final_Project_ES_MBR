@@ -18,19 +18,23 @@ module top(
     //----------------------------------------------------------------------
     // Instantiate the Radiant-generated LEFT I²C block
     //----------------------------------------------------------------------
-    I2C_Left i2cconnection(
-        .SBCLKI (clk),      // System bus clock
-        .SBSTBI (sbstbi),   // Strobe
-        .SBRWI  (sbrwi),    // Write(1)/Read(0)
-        .SBADRI (sbadri),   // Register address
-        .SBDATI (sbdati),   // Data to I2C
-        .SBDATO (sbdato),   // Data from I2C
-        .SBACKO (sbacko),   // Acknowledge
+    i2cconnection i2c_inst (
+    .i2c2_scl_io(i2c_scl),   // FPGA pin
+    .i2c2_sda_io(i2c_sda),   // FPGA pin
+    .rst_i(rst),
+    .ipload_i(1'b1),         // REQUIRED to load registers on startup
+    .ipdone_o(ipdone),
+    .sb_clk_i(clk),
+    .sb_wr_i(sb_wr),
+    .sb_stb_i(sb_stb),
+    .sb_adr_i(sb_addr),
+    .sb_dat_i(sb_wdata),
+    .sb_dat_o(sb_rdata),
+    .sb_ack_o(sb_ack),
+    .i2c_pirq_o(),
+    .i2c_pwkup_o()
+	);
 
-        // I2C physical pins
-        .I2C_SCL (i2c_scl),
-        .I2C_SDA (i2c_sda)
-    );
 
     //----------------------------------------------------------------------
     // Instantiate your I²C driver FSM (that YOU write)
