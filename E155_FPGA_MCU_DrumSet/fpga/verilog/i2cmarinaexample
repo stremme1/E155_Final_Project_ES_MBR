@@ -1,0 +1,188 @@
+module imu_reader_ip (
+    input  logic clk,
+    input  logic reset,
+
+    // I2C lines go to the hard IP pins
+    inout  wire sda,
+    inout  wire scl,
+
+    // Output sensor data
+    output logic [7:0] imu_data [6],
+    output logic new_data
+);
+
+    // ====================================================
+    // I2C Hard IP signals
+    // ====================================================
+    logic [7:0]  sbdati, sbdato;
+    logic [6:0]  sbrwi;
+    logic        stb, we;
+    logic        irq;
+
+    // Hard IP instance (Radiant will generate correct name)
+    SB_I2C i2c0 (
+        .SBCLKI(clk),
+
+        .SBSTBI(stb),
+        .SBWE(we),
+        .SBRWI(sbrwi),
+        .SBDATI(sbdati),
+        .SBDATO(sbdato),
+
+        .I2CIRQ(irq),
+
+        .SCLI(scl),
+        .SDATI(sda)
+    );
+
+    // ====================================================
+    // Register addresses inside the I2C IP (from Lattice doc)
+    // ====================================================
+    localparam CTRL_REG   = 7'h00;
+    localparam CMD_REG    = 7'h04;
+    localparam TX_REG     = 7'h02;
+    localparam RX_REG     = 7'h03;
+    localparam STATUS_REG = 7'h05;
+
+    // ====================================================
+    // Commands for CMD_REG
+    // ====================================================
+    localparam CMD_START  = 8'h90;  // START + WRITE first byte
+    localparam CMD_WRITE  = 8'h10;  // WRITE after first
+    localparam CMD_READ   = 8'h20;  // READ byte
+    localparam CMD_STOP   = 8'h40;  // STOP condition
+
+    // ====================================================
+    // FSM
+    // ====================================================
+    typedef enum logic [4:0] {
+        IDLE,
+        SEND_START,
+        SEND_ADDR,
+        SEND_REG,
+        RESTART,
+        SEND_ADDR_RD,
+        READ_BYTES,
+        READ_WAIT_IRQ,
+        READ_FINISH,
+        STOP
+    } state_t;
+
+    state_t state;
+
+    logic [2:0] byte_cnt;
+
+    // ====================================================
+    // Main FSM
+    // ====================================================
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            state <= IDLE;
+            stb <= 0;
+            we <= 0;
+            new_data <= 0;
+        end else begin
+            stb <= 0;
+            we  <= 0;
+            new_data <= 0;
+
+            case (state)
+
+                //----------------------------------------------
+                IDLE: begin
+                    // begin a new IMU poll cycle
+                    byte_cnt <= 0;
+                    // write slave address (write mode)
+                    sbdati <= {7'h4A, 1'b0};
+                    sbrwi  <= TX_REG;
+                    stb    <= 1;
+                    we     <= 1;
+                    state  <= SEND_START;
+                end
+
+                //----------------------------------------------
+                SEND_START: begin
+                    sbdati <= CMD_START;
+                    sbrwi  <= CMD_REG;
+                    stb    <= 1;
+                    we     <= 1;
+                    state <= SEND_REG;
+                end
+
+                //----------------------------------------------
+                SEND_REG: begin
+                    // send register we want to read
+                    sbdati <= 8'h00; // e.g. IMU data register
+                    sbrwi  <= TX_REG;
+                    stb    <= 1;
+                    we     <= 1;
+
+                    // WRITE command
+                    sbdati <= CMD_WRITE;
+                    sbrwi  <= CMD_REG;
+                    stb    <= 1;
+                    we     <= 1;
+
+                    state <= RESTART;
+                end
+
+                //----------------------------------------------
+                RESTART: begin
+                    // repeated START, now READ direction
+                    sbdati <= {7'h4A, 1'b1};
+                    sbrwi  <= TX_REG;
+                    stb    <= 1;
+                    we     <= 1;
+
+                    sbdati <= CMD_START;
+                    sbrwi  <= CMD_REG;
+                    stb    <= 1;
+                    we     <= 1;
+
+                    state <= READ_BYTES;
+                end
+
+                //----------------------------------------------
+                READ_BYTES: begin
+                    // issue READ command
+                    sbdati <= CMD_READ;
+                    sbrwi  <= CMD_REG;
+                    stb    <= 1;
+                    we     <= 1;
+
+                    state <= READ_WAIT_IRQ;
+                end
+
+                //----------------------------------------------
+                READ_WAIT_IRQ: begin
+                    if (irq) begin
+                        // read byte from RX FIFO
+                        sbrwi <= RX_REG;
+                        stb <= 1;
+                        imu_data[byte_cnt] <= sbdato;
+
+                        if (byte_cnt == 5) begin
+                            state <= READ_FINISH;
+                        end else begin
+                            byte_cnt <= byte_cnt + 1;
+                            state <= READ_BYTES;
+                        end
+                    end
+                end
+
+                //----------------------------------------------
+                READ_FINISH: begin
+                    // STOP
+                    sbdati <= CMD_STOP;
+                    sbrwi  <= CMD_REG;
+                    stb    <= 1;
+                    we     <= 1;
+
+                    new_data <= 1;   // IMU data ready
+                    state <= IDLE;   // poll again
+                end
+
+            endcase
+        end
+    end
+endmodule
