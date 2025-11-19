@@ -90,9 +90,10 @@ module system_bus_master (
             busy <= 0;
         end else begin
             done <= 0;
+            
             case (state)
                 IDLE: begin
-                    sb_stb <= 0;
+                    sb_stb <= 0;  // Always deassert strobe when idle
                     busy <= 0;
                     if (start) begin
                         busy <= 1;
@@ -102,6 +103,7 @@ module system_bus_master (
                         if (write_en) begin
                             sb_data_i <= data_in;
                         end
+                        // Note: Don't assert strobe yet - wait for next state
                     end
                 end
                 WRITE_ADDR: begin
@@ -123,15 +125,19 @@ module system_bus_master (
                 WAIT_ACK: begin
                     // Keep strobe asserted until acknowledge
                     if (sb_ack) begin
-                        sb_stb <= 0;
+                        sb_stb <= 0;  // Deassert immediately when ACK received
                         if (!write_en) begin
                             data_out <= sb_data_o;
                         end
                         done <= 1;
                         busy <= 0;
                     end else begin
-                        sb_stb <= 1;  // Keep strobe asserted
+                        sb_stb <= 1;  // Keep strobe asserted while waiting
                     end
+                end
+                default: begin
+                    // Default case: ensure strobe is deasserted
+                    sb_stb <= 0;
                 end
             endcase
         end
