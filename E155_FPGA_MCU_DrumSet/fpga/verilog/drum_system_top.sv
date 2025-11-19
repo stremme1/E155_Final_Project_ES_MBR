@@ -288,32 +288,4 @@ module drum_system_top (
     assign led2 = button2_db;
 
 endmodule
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM9 is not connected on this instance. VDB-5050	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(1): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_addsub.v. VERI-1328 [pmi_ice40up.v:1]	
-Info	35921014	Synthesis	INFO <35921014> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.vhd(4): analyzing package components. VHDL-1014 [pmi_ice40up.vhd:4]	
-Info	35921504	Synthesis	INFO <35921504> - The default VHDL library search path is now "C:/Users/mbellido/Desktop/mb/drumsi2c/impl_1". VHDL-1504	
-Info	35901018	Synthesis	INFO <35901018> - c:/users/mbellido/desktop/mb/drumsi2c/drum_system_top.sv(10): compiling module drum_system_top. VERI-1018 [drum_system_top.sv:10]	
-Warning	35901209	Synthesis	WARNING <35901209> - c:/users/mbellido/desktop/mb/drumsi2c/drum_system_top.sv(108): expression size 32 truncated to fit in target size 16. VERI-1209 [drum_system_top.sv:108]	
-Critical	35001747	Synthesis	CRITICAL <35001747> - Bit(s) of register driving quaternion_to_euler/roll_den_reg[31:0] stuck at '0': 0	
-Critical	35002028	Synthesis	CRITICAL <35002028> - I/O port's net has no driver and is unused: clk_ext	
-Warning	35935040	Synthesis	WARNING <35935040> - Register \gesture_rec/printedForGyro1y_2 clock is stuck at Zero. VDB-5040	
-Info	35001774	Synthesis	INFO <35001774> - Extracted state machine for register '\imu1_controller/sb_master/state' with one-hot encoding	
-Warning	35001714	Synthesis	WARNING <35001714> - Net gnd has following drivers :	
-Error	35931000	Synthesis	ERROR <35931000> - c:/users/mbellido/desktop/mb/drumsi2c/gesture_recognition.sv(237): net gnd is constantly driven from multiple places at instance \gesture_rec/printedForGyro1y, on port q. VDB-1000 [gesture_recognition.sv:237]	
-Synthesis (1 errors, 23 criticals, 29 warnings, 45 info)	
-
-new errors:Critical	35001476	Synthesis	CRITICAL <35001476> - A top-level module has not been specified for the mixed language design.	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM9 is not connected on this instance. VDB-5050	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(1): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_addsub.v. VERI-1328 [pmi_ice40up.v:1]	
-Info	35921014	Synthesis	INFO <35921014> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.vhd(4): analyzing package components. VHDL-1014 [pmi_ice40up.vhd:4]	
-Warning	35001200	Synthesis	WARNING <35001200> - Setting drum_system_top as the top-level module. To specify the top-level module explicitly, go to View->Set Views->Hierarchy or Project->Active Implementation->Set Top-Level Unit.	
-Info	35921504	Synthesis	INFO <35921504> - The default VHDL library search path is now "C:/Users/mbellido/Desktop/mb/drumsi2c/impl_1". VHDL-1504	
-Info	35901018	Synthesis	INFO <35901018> - c:/users/mbellido/desktop/mb/drumsi2c/drum_system_top.sv(10): compiling module drum_system_top. VERI-1018 [drum_system_top.sv:10]	
-Warning	35901209	Synthesis	WARNING <35901209> - c:/users/mbellido/desktop/mb/drumsi2c/drum_system_top.sv(108): expression size 32 truncated to fit in target size 16. VERI-1209 [drum_system_top.sv:108]	
-Critical	35001747	Synthesis	CRITICAL <35001747> - Bit(s) of register driving quaternion_to_euler/roll_den_reg[31:0] stuck at '0': 0	
-Critical	35002028	Synthesis	CRITICAL <35002028> - I/O port's net has no driver and is unused: clk_ext	
-Info	35001774	Synthesis	INFO <35001774> - Extracted state machine for register '\imu1_controller/sb_master/state' with one-hot encoding	
-Warning	35001714	Synthesis	WARNING <35001714> - Net i2c2_sb_data_i_2 has following drivers :	
-Error	35931000	Synthesis	ERROR <35931000> - c:/users/mbellido/desktop/mb/drumsi2c/bno055_i2c_controller.sv(184): net i2c2_sb_data_i_2 is constantly driven from multiple places at instance \imu1_controller/delay_counter_2_1250__i0, on port q. VDB-1000 [bno055_i2c_controller.sv:184]	
-Synthesis (1 errors, 28 criticals, 24 warnings, 45 info)	
 

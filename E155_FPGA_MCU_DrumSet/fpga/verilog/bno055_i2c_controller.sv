@@ -179,10 +179,58 @@ module bno055_i2c_controller (
                 data_valid <= 1;
             end
             
-            // Decrement delay counter
-            if (delay_counter > 0) begin
-                delay_counter <= delay_counter - 1;
-            end
+            // Handle delay counter: set new values or decrement
+            // All delay_counter assignments consolidated here to avoid multiple drivers
+            case (state)
+                INIT_RESET_WRITE: begin
+                    if (!sb_busy) begin
+                        delay_counter <= DELAY_I2C;
+                    end else if (delay_counter > 0) begin
+                        delay_counter <= delay_counter - 1;
+                    end
+                end
+                INIT_RESET_WAIT: begin
+                    if (delay_counter == 0 && sb_done) begin
+                        delay_counter <= DELAY_650MS;  // Wait 650ms after reset
+                    end else if (delay_counter > 0) begin
+                        delay_counter <= delay_counter - 1;
+                    end
+                end
+                INIT_MODE_WRITE: begin
+                    if (!sb_busy) begin
+                        delay_counter <= DELAY_I2C;
+                    end else if (delay_counter > 0) begin
+                        delay_counter <= delay_counter - 1;
+                    end
+                end
+                INIT_MODE_WAIT: begin
+                    if (delay_counter == 0 && sb_done) begin
+                        delay_counter <= DELAY_30MS;  // Wait 30ms after setting mode
+                    end else if (delay_counter > 0) begin
+                        delay_counter <= delay_counter - 1;
+                    end
+                end
+                READ_START: begin
+                    if (!sb_busy) begin
+                        delay_counter <= DELAY_I2C;
+                    end else if (delay_counter > 0) begin
+                        delay_counter <= delay_counter - 1;
+                    end
+                end
+                DATA_READY: begin
+                    if (delay_counter == 0) begin
+                        delay_counter <= DELAY_I2C;
+                    end else if (delay_counter > 0) begin
+                        delay_counter <= delay_counter - 1;
+                    end
+                end
+                default: begin
+                    // Decrement delay counter for all other states
+                    if (delay_counter > 0) begin
+                        delay_counter <= delay_counter - 1;
+                    end
+                end
+            endcase
             
             // Store data when read completes
             if (sb_done && !sb_busy && !sb_write_en) begin
@@ -344,13 +392,13 @@ module bno055_i2c_controller (
     end
     
     // Control logic for System Bus Master
+    // Note: delay_counter assignments are now in the state machine always_ff block
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             sb_start <= 0;
             sb_write_en <= 0;
             sb_addr_in <= 0;
             sb_data_in <= 0;
-            delay_counter <= 0;
         end else begin
             sb_start <= 0;
             
@@ -364,14 +412,11 @@ module bno055_i2c_controller (
                         // Simplified: Write slave address + register + data
                         // In real implementation, this would be multiple I2C transactions
                         sb_data_in <= {BNO055_ADDR, 1'b0};  // Slave address with write bit
-                        delay_counter <= DELAY_I2C;
                     end
                 end
                 INIT_RESET_WAIT: begin
                     // Wait for I2C transaction to complete
-                    if (delay_counter == 0 && sb_done) begin
-                        delay_counter <= DELAY_650MS;  // Wait 650ms after reset
-                    end
+                    // delay_counter assignment moved to state machine block
                 end
                 INIT_RESET_DELAY: begin
                     // Delay counter decrements in state machine
@@ -384,13 +429,10 @@ module bno055_i2c_controller (
                         sb_write_en <= 1;
                         sb_addr_in <= I2C_TX_REG;
                         sb_data_in <= BNO055_MODE_NDOF;  // Operation mode data
-                        delay_counter <= DELAY_I2C;
                     end
                 end
                 INIT_MODE_WAIT: begin
-                    if (delay_counter == 0 && sb_done) begin
-                        delay_counter <= DELAY_30MS;  // Wait 30ms after setting mode
-                    end
+                    // delay_counter assignment moved to state machine block
                 end
                 INIT_MODE_DELAY: begin
                     // Delay counter decrements in state machine
@@ -403,7 +445,6 @@ module bno055_i2c_controller (
                         sb_write_en <= 1;
                         sb_addr_in <= I2C_CTRL_REG;
                         sb_data_in <= 8'h01;  // Start I2C read transaction
-                        delay_counter <= DELAY_I2C;
                     end
                 end
                 
@@ -535,9 +576,7 @@ module bno055_i2c_controller (
                 
                 DATA_READY: begin
                     // Set delay before next read cycle
-                    if (delay_counter == 0) begin
-                        delay_counter <= DELAY_I2C;
-                    end
+                    // delay_counter assignment moved to state machine block
                 end
                 
                 default: begin
