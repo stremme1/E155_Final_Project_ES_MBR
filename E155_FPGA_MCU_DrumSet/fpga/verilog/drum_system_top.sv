@@ -238,35 +238,79 @@ module drum_system_top (
         .data_valid(imu2_data_valid)
     );
     
-    // Quaternion to Euler converter for IMU 1
-    quaternion_to_euler quat_to_euler1 (
+    // OPTIMIZATION: Time-multiplex quaternion-to-Euler converter to save resources
+    // Share one converter between both IMUs (alternates every cycle)
+    logic mux_sel;  // 0 = IMU1, 1 = IMU2
+    logic [15:0] quat_w_mux, quat_x_mux, quat_y_mux, quat_z_mux;
+    logic data_valid_mux;
+    logic signed [15:0] yaw_mux, pitch_mux, roll_mux;
+    logic euler_valid_mux;
+    
+    // Time-multiplexing: alternate between IMU1 and IMU2
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            mux_sel <= 0;
+        end else begin
+            mux_sel <= ~mux_sel;  // Toggle every cycle
+        end
+    end
+    
+    // Multiplex inputs
+    assign quat_w_mux = mux_sel ? quat2_w : quat1_w;
+    assign quat_x_mux = mux_sel ? quat2_x : quat1_x;
+    assign quat_y_mux = mux_sel ? quat2_y : quat1_y;
+    assign quat_z_mux = mux_sel ? quat2_z : quat1_z;
+    assign data_valid_mux = mux_sel ? imu2_data_valid : imu1_data_valid;
+    
+    // Single shared quaternion-to-Euler converter
+    quaternion_to_euler quat_to_euler_shared (
         .clk(clk),
         .rst_n(rst_n),
-        .data_valid(imu1_data_valid),
-        .quat_w(quat1_w),
-        .quat_x(quat1_x),
-        .quat_y(quat1_y),
-        .quat_z(quat1_z),
-        .yaw(yaw1),
-        .pitch(pitch1),
-        .roll(roll1),
-        .euler_valid()
+        .data_valid(data_valid_mux),
+        .quat_w(quat_w_mux),
+        .quat_x(quat_x_mux),
+        .quat_y(quat_y_mux),
+        .quat_z(quat_z_mux),
+        .yaw(yaw_mux),
+        .pitch(pitch_mux),
+        .roll(roll_mux),
+        .euler_valid(euler_valid_mux)
     );
     
-    // Quaternion to Euler converter for IMU 2
-    quaternion_to_euler quat_to_euler2 (
-        .clk(clk),
-        .rst_n(rst_n),
-        .data_valid(imu2_data_valid),
-        .quat_w(quat2_w),
-        .quat_x(quat2_x),
-        .quat_y(quat2_y),
-        .quat_z(quat2_z),
-        .yaw(yaw2),
-        .pitch(pitch2),
-        .roll(roll2),
-        .euler_valid()
-    );
+    // Demultiplex outputs (with pipeline delay compensation)
+    // quaternion_to_euler has 5 pipeline stages, so delay mux_sel by 5 cycles
+    logic [4:0] mux_sel_pipeline;
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            mux_sel_pipeline <= 5'b0;
+        end else begin
+            mux_sel_pipeline <= {mux_sel_pipeline[3:0], mux_sel};
+        end
+    end
+    logic mux_sel_delayed;
+    assign mux_sel_delayed = mux_sel_pipeline[4];
+    
+    // Store results for both IMUs
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            yaw1 <= 0;
+            pitch1 <= 0;
+            roll1 <= 0;
+            yaw2 <= 0;
+            pitch2 <= 0;
+            roll2 <= 0;
+        end else if (euler_valid_mux) begin
+            if (!mux_sel_delayed) begin
+                yaw1 <= yaw_mux;
+                pitch1 <= pitch_mux;
+                roll1 <= roll_mux;
+            end else begin
+                yaw2 <= yaw_mux;
+                pitch2 <= pitch_mux;
+                roll2 <= roll_mux;
+            end
+        end
+    end
     
     // Gesture recognition module
     gesture_recognition gesture_rec (

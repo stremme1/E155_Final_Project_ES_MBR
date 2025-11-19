@@ -1,6 +1,6 @@
-// Gesture Recognition Module
+// Gesture Recognition Module - OPTIMIZED FOR iCE40UP5K
 // Implements drum gesture recognition logic from C code
-// Determines which drum sound to play based on IMU data
+// Optimized to reduce LUT usage by simplifying comparisons
 // Author: E155 Final Project
 // Date: 2024
 
@@ -43,88 +43,54 @@ module gesture_recognition (
     localparam signed [15:0] PITCH_THRESHOLD_HIGH = 16'd5000;  // 50.00 degrees * 100
     localparam signed [15:0] PITCH_THRESHOLD_LOW = 16'd3000;   // 30.00 degrees * 100
     
-    // Yaw ranges (in degrees * 100)
-    localparam signed [15:0] YAW_SNARE_MIN = 16'd0;
-    localparam signed [15:0] YAW_SNARE_MAX = 16'd12000;      // 120.00 degrees
-    localparam signed [15:0] YAW_HIGH_TOM_MIN = 16'd34000;    // 340.00 degrees
-    localparam signed [15:0] YAW_HIGH_TOM_MAX = 16'd36000;    // 360.00 degrees
-    localparam signed [15:0] YAW_MID_TOM_MIN = 16'd30500;    // 305.00 degrees
-    localparam signed [15:0] YAW_MID_TOM_MAX = 16'd34000;     // 340.00 degrees
-    localparam signed [15:0] YAW_FLOOR_TOM_MIN = 16'd20000;   // 200.00 degrees
-    localparam signed [15:0] YAW_FLOOR_TOM_MAX = 16'd30500;   // 305.00 degrees
+    // OPTIMIZATION: Pre-compute normalized yaw and gyro conditions
+    // This reduces combinational logic in the main always_comb block
+    logic [15:0] yaw1_norm, yaw2_norm;
+    logic gyro1_trigger, gyro2_trigger;
+    logic right_hand_active, left_hand_active;
     
-    // Left hand yaw ranges
-    localparam signed [15:0] YAW_LEFT_SNARE_MIN = 16'd35000;  // 350.00 degrees
-    localparam signed [15:0] YAW_LEFT_SNARE_MAX = 16'd10000;  // 100.00 degrees (wraps around)
-    localparam signed [15:0] YAW_LEFT_HIGH_MIN = 16'd32500;  // 325.00 degrees
-    localparam signed [15:0] YAW_LEFT_HIGH_MAX = 16'd35000;   // 350.00 degrees
-    localparam signed [15:0] YAW_LEFT_MID_MIN = 16'd30000;   // 300.00 degrees
-    localparam signed [15:0] YAW_LEFT_MID_MAX = 16'd32500;   // 325.00 degrees
-    localparam signed [15:0] YAW_LEFT_FLOOR_MIN = 16'd20000;  // 200.00 degrees
-    localparam signed [15:0] YAW_LEFT_FLOOR_MAX = 16'd30000; // 300.00 degrees
+    // Normalize yaw to 0-36000 range (pipelined to reduce combinational logic)
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            yaw1_norm <= 0;
+            yaw2_norm <= 0;
+        end else begin
+            // Yaw1 normalization
+            if (yaw1 < 0) begin
+                yaw1_norm <= yaw1 + 16'd36000;
+            end else if (yaw1 >= 16'd36000) begin
+                yaw1_norm <= yaw1 - 16'd36000;
+            end else begin
+                yaw1_norm <= yaw1[15:0];
+            end
+            
+            // Yaw2 normalization
+            if (yaw2 < 0) begin
+                yaw2_norm <= yaw2 + 16'd36000;
+            end else if (yaw2 >= 16'd36000) begin
+                yaw2_norm <= yaw2 - 16'd36000;
+            end else begin
+                yaw2_norm <= yaw2[15:0];
+            end
+        end
+    end
+    
+    // Pre-compute gyro trigger conditions
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            gyro1_trigger <= 0;
+            gyro2_trigger <= 0;
+        end else begin
+            gyro1_trigger <= (gyro1_y < GYRO_THRESHOLD_Y);
+            gyro2_trigger <= (gyro2_y < GYRO_THRESHOLD_Y);
+        end
+    end
     
     // Debouncing flags (matching C code behavior)
     logic printedForGyro1y, printedForGyro2y;
     logic gyro1_y_prev, gyro2_y_prev;
     
-    // Normalize yaw to 0-36000 range (degrees * 100)
-    logic signed [15:0] yaw1_norm, yaw2_norm;
-    
-    // Normalize yaw1 (0-36000)
-    always_comb begin
-        if (yaw1 < 0) begin
-            yaw1_norm = yaw1 + 16'd36000;
-        end else if (yaw1 >= 16'd36000) begin
-            yaw1_norm = yaw1 - 16'd36000;
-        end else begin
-            yaw1_norm = yaw1;
-        end
-    end
-    
-    // Normalize yaw2 (0-36000)
-    always_comb begin
-        if (yaw2 < 0) begin
-            yaw2_norm = yaw2 + 16'd36000;
-        end else if (yaw2 >= 16'd36000) begin
-            yaw2_norm = yaw2 - 16'd36000;
-        end else begin
-            yaw2_norm = yaw2;
-        end
-    end
-    
-    // Signals to track which hand triggered (computed in always_comb)
-    logic right_hand_triggered, left_hand_triggered;
-    
-    // Determine which hand triggered (for debounce flag setting)
-    always_comb begin
-        right_hand_triggered = 0;
-        left_hand_triggered = 0;
-        
-        if (!button1 && (gyro1_y <= -16'd2000 || gyro2_y <= -16'd2000)) begin
-            // Right hand conditions
-            if ((yaw1_norm >= YAW_SNARE_MIN && yaw1_norm <= YAW_SNARE_MAX) ||
-                (yaw1_norm >= YAW_HIGH_TOM_MIN || yaw1_norm <= 16'd2000) ||
-                (yaw1_norm >= YAW_MID_TOM_MIN && yaw1_norm <= YAW_MID_TOM_MAX) ||
-                (yaw1_norm >= YAW_FLOOR_TOM_MIN && yaw1_norm <= YAW_FLOOR_TOM_MAX)) begin
-                if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                    right_hand_triggered = 1;
-                end
-            end
-            
-            // Left hand conditions
-            if ((yaw2_norm >= YAW_LEFT_SNARE_MIN || yaw2_norm <= YAW_LEFT_SNARE_MAX) ||
-                (yaw2_norm >= YAW_LEFT_HIGH_MIN && yaw2_norm <= YAW_LEFT_HIGH_MAX) ||
-                (yaw2_norm >= YAW_LEFT_MID_MIN && yaw2_norm <= YAW_LEFT_MID_MAX) ||
-                (yaw2_norm >= YAW_LEFT_FLOOR_MIN && yaw2_norm <= YAW_LEFT_FLOOR_MAX)) begin
-                if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
-                    left_hand_triggered = 1;
-                end
-            end
-        end
-    end
-    
     // Track previous gyro values for debouncing
-    // Combined into single always_ff to avoid multiple drivers
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             gyro1_y_prev <= 0;
@@ -141,8 +107,13 @@ module gesture_recognition (
             end else if (gyro1_y >= GYRO_THRESHOLD_Y && printedForGyro1y) begin
                 printedForGyro1y <= 0;
             end
-            // Set debounce flag when right hand triggers
-            else if (right_hand_triggered && gyro1_y < GYRO_THRESHOLD_Y) begin
+            // Set debounce flag when right hand triggers (simplified condition)
+            else if (gyro1_trigger && !printedForGyro1y && 
+                     ((yaw1_norm <= 16'd12000) ||  // Snare range
+                      (yaw1_norm >= 16'd34000) || // High tom range
+                      (yaw1_norm <= 16'd2000) ||  // High tom wrap
+                      ((yaw1_norm >= 16'd30500) && (yaw1_norm <= 16'd34000)) || // Mid tom
+                      ((yaw1_norm >= 16'd20000) && (yaw1_norm <= 16'd30500)))) begin // Floor tom
                 printedForGyro1y <= 1;
             end
             
@@ -151,103 +122,79 @@ module gesture_recognition (
             end else if (gyro2_y >= GYRO_THRESHOLD_Y && printedForGyro2y) begin
                 printedForGyro2y <= 0;
             end
-            // Set debounce flag when left hand triggers
-            else if (left_hand_triggered && gyro2_y < GYRO_THRESHOLD_Y) begin
+            // Set debounce flag when left hand triggers (simplified condition)
+            else if (gyro2_trigger && !printedForGyro2y &&
+                     ((yaw2_norm >= 16'd35000) || (yaw2_norm <= 16'd10000) || // Snare range
+                      ((yaw2_norm >= 16'd32500) && (yaw2_norm <= 16'd35000)) || // High tom
+                      ((yaw2_norm >= 16'd30000) && (yaw2_norm <= 16'd32500)) || // Mid tom
+                      ((yaw2_norm >= 16'd20000) && (yaw2_norm <= 16'd30000)))) begin // Floor tom
                 printedForGyro2y <= 1;
             end
         end
     end
     
-    // Gesture recognition logic
+    // OPTIMIZATION: Simplified gesture recognition using pipelined values
+    // Break into smaller always_comb blocks to reduce LUT depth
+    logic [7:0] right_hand_sound, left_hand_sound;
+    
+    // Right hand logic (simplified)
     always_comb begin
-        sound_id = NO_SOUND;
+        right_hand_sound = NO_SOUND;
         
-        // Button 1: Kick drum
-        if (button1) begin
-            sound_id = SOUND_KICK;
-        end
-        // Early exit if no significant movement
-        else if (gyro1_y > -16'd2000 && gyro2_y > -16'd2000) begin
-            sound_id = NO_SOUND;
-        end
-        // RIGHT HAND LOGIC
-        else if (yaw1_norm >= YAW_SNARE_MIN && yaw1_norm <= YAW_SNARE_MAX) begin
-            if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                sound_id = SOUND_SNARE;
+        if (gyro1_trigger && !printedForGyro1y) begin
+            if (yaw1_norm <= 16'd12000) begin  // Snare: 0-120
+                right_hand_sound = SOUND_SNARE;
             end
-        end
-        else if (yaw1_norm >= YAW_HIGH_TOM_MIN || yaw1_norm <= 16'd2000) begin  // 340-360 or 0-20
-            if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                if (pitch1 > PITCH_THRESHOLD_HIGH) begin
-                    sound_id = SOUND_CRASH;
-                end else begin
-                    sound_id = SOUND_HIGH_TOM;
-                end
+            else if (yaw1_norm >= 16'd34000 || yaw1_norm <= 16'd2000) begin  // High tom: 340-360 or 0-20
+                right_hand_sound = (pitch1 > PITCH_THRESHOLD_HIGH) ? SOUND_CRASH : SOUND_HIGH_TOM;
             end
-        end
-        else if (yaw1_norm >= YAW_MID_TOM_MIN && yaw1_norm <= YAW_MID_TOM_MAX) begin
-            if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                if (pitch1 > PITCH_THRESHOLD_HIGH) begin
-                    sound_id = SOUND_RIDE;
-                end else begin
-                    sound_id = SOUND_MID_TOM;
-                end
+            else if (yaw1_norm >= 16'd30500 && yaw1_norm <= 16'd34000) begin  // Mid tom: 305-340
+                right_hand_sound = (pitch1 > PITCH_THRESHOLD_HIGH) ? SOUND_RIDE : SOUND_MID_TOM;
             end
-        end
-        else if (yaw1_norm >= YAW_FLOOR_TOM_MIN && yaw1_norm <= YAW_FLOOR_TOM_MAX) begin
-            if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                if (pitch1 > PITCH_THRESHOLD_LOW) begin
-                    sound_id = SOUND_RIDE;
-                end else begin
-                    sound_id = SOUND_FLOOR_TOM;
-                end
-            end
-        end
-        
-        // LEFT HAND LOGIC (only if right hand didn't trigger)
-        if (sound_id == NO_SOUND) begin
-            // Left hand snare/hi-hat: yaw 350-100 (wraps around)
-            if ((yaw2_norm >= YAW_LEFT_SNARE_MIN || yaw2_norm <= YAW_LEFT_SNARE_MAX)) begin
-                if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
-                    if (pitch2 > PITCH_THRESHOLD_LOW && gyro2_z > GYRO_THRESHOLD_Z) begin
-                        sound_id = SOUND_HIHAT;
-                    end else begin
-                        sound_id = SOUND_SNARE;
-                    end
-                end
-            end
-            // Left hand high tom/crash: yaw 325-350
-            else if (yaw2_norm >= YAW_LEFT_HIGH_MIN && yaw2_norm <= YAW_LEFT_HIGH_MAX) begin
-                if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
-                    if (pitch2 > PITCH_THRESHOLD_HIGH) begin
-                        sound_id = SOUND_CRASH;
-                    end else begin
-                        sound_id = SOUND_HIGH_TOM;
-                    end
-                end
-            end
-            // Left hand mid tom/ride: yaw 300-325
-            else if (yaw2_norm >= YAW_LEFT_MID_MIN && yaw2_norm <= YAW_LEFT_MID_MAX) begin
-                if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
-                    if (pitch2 > PITCH_THRESHOLD_HIGH) begin
-                        sound_id = SOUND_RIDE;
-                    end else begin
-                        sound_id = SOUND_MID_TOM;
-                    end
-                end
-            end
-            // Left hand floor tom/ride: yaw 200-300
-            else if (yaw2_norm >= YAW_LEFT_FLOOR_MIN && yaw2_norm <= YAW_LEFT_FLOOR_MAX) begin
-                if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
-                    if (pitch2 > PITCH_THRESHOLD_LOW) begin
-                        sound_id = SOUND_RIDE;
-                    end else begin
-                        sound_id = SOUND_FLOOR_TOM;
-                    end
-                end
+            else if (yaw1_norm >= 16'd20000 && yaw1_norm <= 16'd30500) begin  // Floor tom: 200-305
+                right_hand_sound = (pitch1 > PITCH_THRESHOLD_LOW) ? SOUND_RIDE : SOUND_FLOOR_TOM;
             end
         end
     end
     
+    // Left hand logic (simplified)
+    always_comb begin
+        left_hand_sound = NO_SOUND;
+        
+        if (gyro2_trigger && !printedForGyro2y) begin
+            if (yaw2_norm >= 16'd35000 || yaw2_norm <= 16'd10000) begin  // Snare: 350-100 (wrap)
+                if (pitch2 > PITCH_THRESHOLD_LOW && gyro2_z > GYRO_THRESHOLD_Z) begin
+                    left_hand_sound = SOUND_HIHAT;
+                end else begin
+                    left_hand_sound = SOUND_SNARE;
+                end
+            end
+            else if (yaw2_norm >= 16'd32500 && yaw2_norm <= 16'd35000) begin  // High tom: 325-350
+                left_hand_sound = (pitch2 > PITCH_THRESHOLD_HIGH) ? SOUND_CRASH : SOUND_HIGH_TOM;
+            end
+            else if (yaw2_norm >= 16'd30000 && yaw2_norm <= 16'd32500) begin  // Mid tom: 300-325
+                left_hand_sound = (pitch2 > PITCH_THRESHOLD_HIGH) ? SOUND_RIDE : SOUND_MID_TOM;
+            end
+            else if (yaw2_norm >= 16'd20000 && yaw2_norm <= 16'd30000) begin  // Floor tom: 200-300
+                left_hand_sound = (pitch2 > PITCH_THRESHOLD_LOW) ? SOUND_RIDE : SOUND_FLOOR_TOM;
+            end
+        end
+    end
+    
+    // Final output selection (prioritize right hand, then left hand, then button)
+    always_comb begin
+        if (button1) begin
+            sound_id = SOUND_KICK;
+        end
+        else if (right_hand_sound != NO_SOUND) begin
+            sound_id = right_hand_sound;
+        end
+        else if (left_hand_sound != NO_SOUND) begin
+            sound_id = left_hand_sound;
+        end
+        else begin
+            sound_id = NO_SOUND;
+        end
+    end
+    
 endmodule
-
