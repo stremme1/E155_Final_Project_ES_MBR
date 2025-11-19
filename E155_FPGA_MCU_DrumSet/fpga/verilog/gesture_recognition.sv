@@ -92,7 +92,39 @@ module gesture_recognition (
         end
     end
     
+    // Signals to track which hand triggered (computed in always_comb)
+    logic right_hand_triggered, left_hand_triggered;
+    
+    // Determine which hand triggered (for debounce flag setting)
+    always_comb begin
+        right_hand_triggered = 0;
+        left_hand_triggered = 0;
+        
+        if (!button1 && (gyro1_y <= -16'd2000 || gyro2_y <= -16'd2000)) begin
+            // Right hand conditions
+            if ((yaw1_norm >= YAW_SNARE_MIN && yaw1_norm <= YAW_SNARE_MAX) ||
+                (yaw1_norm >= YAW_HIGH_TOM_MIN || yaw1_norm <= 16'd2000) ||
+                (yaw1_norm >= YAW_MID_TOM_MIN && yaw1_norm <= YAW_MID_TOM_MAX) ||
+                (yaw1_norm >= YAW_FLOOR_TOM_MIN && yaw1_norm <= YAW_FLOOR_TOM_MAX)) begin
+                if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
+                    right_hand_triggered = 1;
+                end
+            end
+            
+            // Left hand conditions
+            if ((yaw2_norm >= YAW_LEFT_SNARE_MIN || yaw2_norm <= YAW_LEFT_SNARE_MAX) ||
+                (yaw2_norm >= YAW_LEFT_HIGH_MIN && yaw2_norm <= YAW_LEFT_HIGH_MAX) ||
+                (yaw2_norm >= YAW_LEFT_MID_MIN && yaw2_norm <= YAW_LEFT_MID_MAX) ||
+                (yaw2_norm >= YAW_LEFT_FLOOR_MIN && yaw2_norm <= YAW_LEFT_FLOOR_MAX)) begin
+                if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
+                    left_hand_triggered = 1;
+                end
+            end
+        end
+    end
+    
     // Track previous gyro values for debouncing
+    // Combined into single always_ff to avoid multiple drivers
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             gyro1_y_prev <= 0;
@@ -109,11 +141,19 @@ module gesture_recognition (
             end else if (gyro1_y >= GYRO_THRESHOLD_Y && printedForGyro1y) begin
                 printedForGyro1y <= 0;
             end
+            // Set debounce flag when right hand triggers
+            else if (right_hand_triggered && gyro1_y < GYRO_THRESHOLD_Y) begin
+                printedForGyro1y <= 1;
+            end
             
             if (gyro2_y < GYRO_THRESHOLD_Y && gyro2_y_prev >= GYRO_THRESHOLD_Y) begin
                 printedForGyro2y <= 0;
             end else if (gyro2_y >= GYRO_THRESHOLD_Y && printedForGyro2y) begin
                 printedForGyro2y <= 0;
+            end
+            // Set debounce flag when left hand triggers
+            else if (left_hand_triggered && gyro2_y < GYRO_THRESHOLD_Y) begin
+                printedForGyro2y <= 1;
             end
         end
     end
@@ -209,33 +249,5 @@ module gesture_recognition (
         end
     end
     
-    // Update debounce flags when sound is triggered
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            // Already initialized above
-        end else begin
-            if (sound_id != NO_SOUND) begin
-                // Set debounce flag based on which hand triggered
-                if ((yaw1_norm >= YAW_SNARE_MIN && yaw1_norm <= YAW_SNARE_MAX) ||
-                    (yaw1_norm >= YAW_HIGH_TOM_MIN || yaw1_norm <= 16'd2000) ||
-                    (yaw1_norm >= YAW_MID_TOM_MIN && yaw1_norm <= YAW_MID_TOM_MAX) ||
-                    (yaw1_norm >= YAW_FLOOR_TOM_MIN && yaw1_norm <= YAW_FLOOR_TOM_MAX)) begin
-                    if (gyro1_y < GYRO_THRESHOLD_Y) begin
-                        printedForGyro1y <= 1;
-                    end
-                end
-                
-                if ((yaw2_norm >= YAW_LEFT_SNARE_MIN || yaw2_norm <= YAW_LEFT_SNARE_MAX) ||
-                    (yaw2_norm >= YAW_LEFT_HIGH_MIN && yaw2_norm <= YAW_LEFT_HIGH_MAX) ||
-                    (yaw2_norm >= YAW_LEFT_MID_MIN && yaw2_norm <= YAW_LEFT_MID_MAX) ||
-                    (yaw2_norm >= YAW_LEFT_FLOOR_MIN && yaw2_norm <= YAW_LEFT_FLOOR_MAX)) begin
-                    if (gyro2_y < GYRO_THRESHOLD_Y) begin
-                        printedForGyro2y <= 1;
-                    end
-                end
-            end
-        end
-    end
-
 endmodule
 
