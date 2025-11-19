@@ -35,8 +35,8 @@ In Module Generator:
 1. **General Tab**:
    - ✅ **Enable Left I2C** (I2C1)
    - ✅ **Enable Right I2C** (I2C2)
-   - **System Clock**: 48 MHz (for SB_HFOSC)
-   - **Configuration Clock Source**: SB_HFOSC
+   - **System Clock**: 48 MHz (for HFOSC/HSOC)
+   - **Configuration Clock Source**: HFOSC/HSOC
 
 ### Step 2: Configure I2C1 (Left I2C - IMU 1)
 
@@ -47,7 +47,6 @@ In Module Generator:
 - **I2C Clock Rate (Actual)**: Should show ~400 kHz
 - **Addressing**: 7-bit
 - **Interrupts**: Enable "TX/RX Ready"
-- **Include I/O Buffers**: ✅ **ENABLED**
 
 ### Step 3: Configure I2C2 (Right I2C - IMU 2)
 
@@ -58,7 +57,6 @@ In Module Generator:
 - **I2C Clock Rate (Actual)**: Should show ~400 kHz
 - **Addressing**: 7-bit
 - **Interrupts**: Enable "TX/RX Ready"
-- **Include I/O Buffers**: ✅ **ENABLED**
 
 ### Step 4: Generate IP
 

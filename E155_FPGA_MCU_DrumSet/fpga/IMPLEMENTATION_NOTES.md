@@ -72,7 +72,6 @@ When using Module Generator:
 4. **Set I2C clock rate**: 100kHz or 400kHz (BNO055 supports up to 400kHz)
 5. **System Clock**: Set to your system clock frequency
 6. **Enable interrupts**: TX/RX Ready interrupts recommended
-7. **Include I/O Buffers**: Enable this option
 
 ## Physical I2C Pins
 

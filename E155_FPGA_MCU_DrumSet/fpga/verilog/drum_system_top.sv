@@ -10,7 +10,7 @@
 module drum_system_top (
     // Clock and Reset
     // For simulation: provide external clk
-    // For synthesis: can use SB_HFOSC internally (see clock generation below)
+    // For synthesis: can use HSOC internally (see clock generation below)
     input  logic        clk_ext,      // External clock input (for simulation)
     input  logic        rst_n,
     
@@ -54,18 +54,19 @@ module drum_system_top (
 );
     
     // Clock generation: Use internal oscillator for synthesis, external for simulation
-    // This allows Questa simulation to work while using SB_HFOSC in hardware
+    // This allows Questa simulation to work while using HSOC in hardware
     logic clk;
+    logic clk_osc;  // Declare outside ifdef for better compatibility
     
 `ifdef SIMULATION
     // For simulation: use external clock directly
     assign clk = clk_ext;
 `else
-    // For synthesis: use SB_HFOSC internal oscillator
-    // SB_HFOSC generates ~48MHz clock (actual frequency depends on device)
-    wire clk_osc;
-    SB_HFOSC #(
-        .CLKHF_DIV("0b00")  // Divide by 1 (48MHz), use "0b01" for 24MHz, "0b10" for 12MHz
+    // For synthesis: use HSOC internal oscillator
+    // HSOC generates ~48MHz clock (actual frequency depends on device)
+    // Note: Some tools use HFOSC instead of HSOC - check your tool documentation
+    HSOC #(
+        .CLKHF_DIV("0b00")  // Divide by 1 (48MHz), use "0b01" for 24MHz, "0b10" for 12MHz, "0b11" for 6MHz
     ) u_hfosc (
         .CLKHFPU(1'b1),      // Power up
         .CLKHFEN(1'b1),      // Enable

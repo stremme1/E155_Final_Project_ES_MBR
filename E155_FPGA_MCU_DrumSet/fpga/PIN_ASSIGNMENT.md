@@ -36,7 +36,7 @@ These pins must be assigned manually in the Pin Assignment Editor:
 | `led2` | Output | 1-bit | Status LED 2 | Any GPIO pin |
 | `sound_id[7:0]` | Output | 8-bit | Drum sound ID | Any 8 GPIO pins (or fewer if using encoding) |
 | `rst_n` | Input | 1-bit | Reset (active low) | Any GPIO pin or dedicated reset pin |
-| `clk_ext` | Input | 1-bit | External clock (optional) | Dedicated clock pin (GBUF) - **Only if NOT using SB_HFOSC** |
+| `clk_ext` | Input | 1-bit | External clock (optional) | Dedicated clock pin (GBUF) - **Only if NOT using HFOSC/HSOC** |
 
 ### 3. System Bus Interface (Internal - No Physical Pins)
 
@@ -97,7 +97,7 @@ sound_id[7] -> GPIO pin (e.g., pin 26)
 // Reset (optional - can use dedicated reset pin)
 rst_n      -> GPIO pin or dedicated reset pin
 
-// External Clock (ONLY if NOT using SB_HFOSC)
+// External Clock (ONLY if NOT using HFOSC/HSOC)
 clk_ext    -> Dedicated clock input (GBUF pin, e.g., G0-G7)
 ```
 
@@ -108,10 +108,10 @@ clk_ext    -> Dedicated clock input (GBUF pin, e.g., G0-G7)
 
 ### Clock Configuration
 
-**Option 1: Internal Clock (SB_HFOSC) - Recommended**
+**Option 1: Internal Clock (HFOSC/HSOC) - Recommended**
 - No pin assignment needed for clock
 - `clk_ext` input is **NOT used** in synthesis (only for simulation)
-- Clock is generated internally by `SB_HFOSC` primitive
+- Clock is generated internally by `HFOSC` (or `HSOC` depending on tool) primitive
 - Frequency: ~48MHz (configurable via divider)
 
 **Option 2: External Clock**
@@ -156,7 +156,7 @@ set_location_assignment PIN_XX -to rst_n
 set_io_standard "3.3-V LVCMOS" -current
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to rst_n
 
-# External Clock (only if using external clock, not SB_HFOSC)
+# External Clock (only if using external clock, not HFOSC/HSOC)
 # set_location_assignment PIN_G0 -to clk_ext
 # set_io_standard "3.3-V LVCMOS" -current
 ```

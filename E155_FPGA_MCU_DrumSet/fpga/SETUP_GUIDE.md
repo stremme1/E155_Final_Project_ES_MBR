@@ -36,17 +36,16 @@ Complete step-by-step guide for setting up and deploying the drum system on iCE4
 2. **I2C Configuration Tab**:
    - **Mode**: Master
    - **I2C Clock Rate (Desired)**: 400 kHz (BNO055 supports up to 400kHz)
-   - **System Clock**: 48 MHz (if using SB_HFOSC) or your system clock frequency
+   - **System Clock**: 48 MHz (if using HFOSC/HSOC) or your system clock frequency
    - **I2C Clock Rate (Actual)**: Verify it's close to 400kHz
    - **Addressing**: 7-bit addressing
-   - **General Call Enable**: Disabled (unless needed)
-   - **Wakeup Enable**: Disabled (unless needed)
    - **Interrupts**: Enable "TX/RX Ready" interrupts
-   - **Include I/O Buffers**: ✅ **ENABLED** (Important!)
+   
+   **Note**: Options like General Call Enable, Wake Up Enable, Arbitration Lost, and Overrun/NACK handling are typically **register-level controls** that can be configured via the System Bus interface after IP generation, not Module Generator options. For BNO055 communication in Master mode, these can be left at default (disabled) unless you need specific error handling.
 
 3. **General Tab**:
    - **System Clock**: 48 MHz (or your clock frequency)
-   - **Configuration Clock Source**: SB_HFOSC (for iCE40 Ultra/UltraPlus)
+   - **Configuration Clock Source**: HFOSC/HSOC (for iCE40 Ultra/UltraPlus)
 
 ### 1.3 Configure I2C2 (Right I2C - IMU 2)
 
@@ -59,7 +58,6 @@ Complete step-by-step guide for setting up and deploying the drum system on iCE4
    - **Mode**: Master
    - **I2C Clock Rate**: 400 kHz
    - **Interrupts**: Enable "TX/RX Ready"
-   - **Include I/O Buffers**: ✅ **ENABLED**
 
 ### 1.4 Generate IP
 
@@ -79,6 +77,24 @@ The Module Generator creates:
 - `IPDONE` output - Goes high when IP is ready
 - System Bus interface (SBCLKi, SBWRi, SBSTBi, etc.)
 - I2C physical pins (SCL/SDA) - **These are handled internally**
+
+### 1.6 Optional Register-Level Configuration
+
+After IP generation, you can configure additional I2C features via the System Bus interface by writing to I2C control registers. These are **not** Module Generator options, but can be set in your SystemVerilog code:
+
+**Available Register-Level Controls** (configure via System Bus):
+- **General Call Enable** (`GCEN` bit): Allows response to General Call address (0x00) in Slave mode. **Not needed for Master mode** - leave disabled.
+- **Wake Up Enable** (`WKUPEN` bit): Enables wake-up from standby/sleep mode on address match. **Not needed for BNO055** - leave disabled.
+- **Arbitration Lost Interrupt** (`IRQARBLEN` bit): Enables interrupt when master loses bus arbitration. **Optional** - can enable for multi-master debugging.
+- **Overrun/NACK Interrupt** (`IRQROEEN` bit): Enables interrupt for receive overrun or NACK received. **Optional** - can enable for error handling.
+
+**For BNO055 Communication**: These can all be left at default (disabled) since:
+- You're using Master mode (no General Call needed)
+- No low-power wake-up required
+- Single master system (arbitration lost unlikely)
+- Basic error handling via TX/RX Ready interrupts is sufficient
+
+**Reference**: See Advanced iCE40 I2C Usage Guide (FPGA-TN-02011) for register map details.
 
 ## Step 2: Integrate Generated IP with Your Design
 
@@ -219,7 +235,7 @@ rst_n         -> GPIO pin or dedicated reset pin
 
 ### 3.3 Clock Pin
 
-**If using SB_HFOSC (recommended)**:
+**If using HFOSC/HSOC (recommended)**:
 - No pin assignment needed - clock is internal
 - `clk_ext` is only used for simulation
 
@@ -384,7 +400,7 @@ BNO055 GND     -> GND (common with FPGA GND)
 
 ### 8.1 Clock Frequency
 
-- Adjust SB_HFOSC divider if needed
+- Adjust HFOSC/HSOC divider if needed
 - Verify I2C clock rate is correct
 - Balance between speed and power consumption
 

@@ -9,7 +9,7 @@ The system uses the iCE40's hardened I2C IP blocks to communicate with two BNO05
 ### System Components
 
 1. **drum_system_top.sv** - Top-level module that instantiates all sub-modules
-   - Handles clock generation (SB_HFOSC for synthesis, external clock for simulation)
+   - Handles clock generation (HFOSC/HSOC for synthesis, external clock for simulation)
    - Manages calibration and button debouncing
    - Connects to I2C IP via System Bus interface
    
@@ -46,9 +46,8 @@ The system uses the iCE40's hardened I2C IP blocks to communicate with two BNO05
    - Enable Right I2C (I2C2) for IMU 2 (Left Hand)
    - Configure as Master mode
    - Set I2C clock rate (typically 100kHz or 400kHz)
-   - Set System Clock frequency (e.g., 48MHz if using SB_HFOSC)
+   - Set System Clock frequency (e.g., 48MHz if using HFOSC/HSOC)
    - Enable interrupts (TX/RX Ready recommended)
-   - Include I/O Buffers
 
 2. **Soft IP Wrapper Interface:**
    The Module Generator creates a Soft IP wrapper with:
@@ -196,12 +195,13 @@ When generating the I2C IP using Lattice's Module Generator:
 
 The design supports both internal oscillator (for synthesis) and external clock (for simulation):
 
-- **For Synthesis**: Uses `SB_HFOSC` primitive to generate internal clock (~48MHz)
+- **For Synthesis**: Uses `HFOSC` (or `HSOC` depending on tool) primitive to generate internal clock (~48MHz)
   - Configured via `ifdef SIMULATION` directive
   - Clock divider can be adjusted via `CLKHF_DIV` parameter
+  - **Note**: Lattice Radiant uses `HFOSC`, some tools may use `HSOC` - check your tool documentation
   
 - **For Simulation**: Uses external `clk_ext` input
-  - Questa Simulator compatible (no SB_HFOSC in simulation)
+  - Questa Simulator compatible (no HFOSC/HSOC in simulation)
   - Define `SIMULATION` macro in test bench
 
 ### Using in Questa Simulator
@@ -240,5 +240,5 @@ vsim drum_system_top_tb
 - iCE40 I2C and SPI Hardened IP User Guide (FPGA-TN-02010)
 - BNO055 Datasheet
 - Original C code: `E155_FPGA_MCU_DrumSet/mcu/src/gesture_recognition.c`
-- iCE40 Oscillator Usage Guide (FPGA-TN-02008) - for SB_HFOSC details
+- iCE40 Oscillator Usage Guide (FPGA-TN-02008) - for HFOSC/HSOC details
 
