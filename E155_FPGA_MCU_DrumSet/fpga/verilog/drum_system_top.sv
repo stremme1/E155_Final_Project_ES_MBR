@@ -1,16 +1,12 @@
-// Top-level Drum System Module for iCE40 FPGA - SINGLE IMU VERSION
-// CRITICAL OPTIMIZATION: Removed second IMU to save ~400-600 LUTs
-// Uses hardened I2C IP block to communicate with BNO055 IMU sensor
-// Implements gesture recognition and outputs drum sound IDs
+// Top-level Drum System Module - GYRO-ONLY VERSION
+// CRITICAL: Removed quaternion-to-Euler conversion entirely
+// Uses only gyroscope data for gesture recognition (saves ~500-700 LUTs)
 // Author: E155 Final Project
 // Date: 2024
 
 module drum_system_top (
-    // Clock and Reset
-    input  logic        clk_ext,      // External clock input (for simulation)
+    input  logic        clk_ext,
     input  logic        rst_n,
-    
-    // System Bus Interface for I2C1 (Left I2C - Single IMU)
     output logic        i2c1_sb_clk,
     output logic        i2c1_sb_wr,
     output logic        i2c1_sb_stb,
@@ -21,20 +17,13 @@ module drum_system_top (
     input  logic        i2c1_irq,
     output logic        i2c1_ipload,
     input  logic        i2c1_ipdone,
-    
-    // REMOVED: I2C2 interface (second IMU removed to save resources)
-    
-    // User Interface
-    input  logic        button1,      // Kick drum
-    input  logic        button2,      // Unused (kept for compatibility)
-    output logic        led1,         // Status LED
-    output logic        led2,         // Status LED (always off)
-    
-    // Audio Output
-    output logic [7:0]  sound_id      // Drum sound ID (0-7, 255 = no sound)
+    input  logic        button1,
+    input  logic        button2,
+    output logic        led1,
+    output logic        led2,
+    output logic [7:0]  sound_id
 );
     
-    // Clock generation
     logic clk;
     
 `ifdef SIMULATION
@@ -48,14 +37,10 @@ module drum_system_top (
     (* keep *) wire _unused_clk_ext = clk_ext;
 `endif
 
-    // Internal signals for Single IMU (Right Hand only)
-    logic [15:0] quat_w, quat_x, quat_y, quat_z;
+    // REMOVED: Quaternion data (not needed)
+    // Only need gyroscope data
     logic signed [15:0] gyro_x, gyro_y, gyro_z;
-    logic signed [15:0] yaw, pitch, roll;
     logic imu_data_valid;
-    
-    // Yaw normalization
-    logic signed [15:0] yaw_normalized;
     
     // Debouncing
     logic button1_db;
@@ -73,17 +58,6 @@ module drum_system_top (
                 debounce_counter <= 0;
                 button1_db <= button1;
             end
-        end
-    end
-    
-    // Yaw normalization (direct, no offset)
-    always_comb begin
-        if (yaw < 0) begin
-            yaw_normalized = yaw + 16'sd36000;
-        end else if (yaw >= 16'sd36000) begin
-            yaw_normalized = yaw - 16'sd36000;
-        end else begin
-            yaw_normalized = yaw;
         end
     end
     
@@ -106,8 +80,8 @@ module drum_system_top (
     
     assign i2c1_sb_clk = clk;
     
-    // BNO055 I2C Controller (Single IMU)
-    bno055_i2c_controller imu_controller (
+    // BNO055 I2C Controller - GYRO ONLY
+    bno055_i2c_controller_gyro_only imu_controller (
         .clk(clk),
         .rst_n(rst_n && i2c1_ready),
         .sb_clk(i2c1_sb_clk),
@@ -118,47 +92,24 @@ module drum_system_top (
         .sb_data_o(i2c1_sb_data_o),
         .sb_ack(i2c1_sb_ack),
         .sb_irq(i2c1_irq),
-        .quat_w(quat_w),
-        .quat_x(quat_x),
-        .quat_y(quat_y),
-        .quat_z(quat_z),
         .gyro_x(gyro_x),
         .gyro_y(gyro_y),
         .gyro_z(gyro_z),
         .data_valid(imu_data_valid)
     );
     
-    // Quaternion-to-Euler converter (no time-multiplexing needed)
-    quaternion_to_euler quat_to_euler (
-        .clk(clk),
-        .rst_n(rst_n),
-        .data_valid(imu_data_valid),
-        .quat_w(quat_w),
-        .quat_x(quat_x),
-        .quat_y(quat_y),
-        .quat_z(quat_z),
-        .yaw(yaw),
-        .pitch(pitch),
-        .roll(roll),
-        .euler_valid()
-    );
+    // REMOVED: Quaternion-to-Euler conversion entirely
     
-    // Gesture recognition module (single-hand version)
-    gesture_recognition gesture_rec (
+    // Gesture recognition - GYRO ONLY (no yaw/pitch)
+    gesture_recognition_gyro_only gesture_rec (
         .clk(clk),
         .rst_n(rst_n),
-        .yaw1(yaw_normalized),
-        .pitch1(pitch),
-        .gyro1_y(gyro_y),
-        .yaw2(16'sd0),  // Not used
-        .pitch2(16'sd0),  // Not used
-        .gyro2_y(16'sd0),  // Not used
-        .gyro2_z(16'sd0),  // Not used
+        .gyro_y(gyro_y),
+        .gyro_z(gyro_z),
         .button1(button1_db),
         .sound_id(sound_id)
     );
     
-    // LED control
     assign led1 = (sound_id != 8'hFF);
     assign led2 = 1'b0;
 
