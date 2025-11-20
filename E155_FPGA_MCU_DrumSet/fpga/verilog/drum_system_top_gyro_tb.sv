@@ -62,11 +62,14 @@ module drum_system_top_gyro_tb;
     assign i2c1_ipdone = dut.i2c1_ipdone;
     
     // Registers to drive I2C IP block outputs via force
+    // Note: The real i2c_block.v uses Lattice primitives that may not simulate
+    // We'll use force statements to drive the System Bus responses
     reg [7:0] mock_sb_data_o;
     reg mock_sb_ack_o;
     reg mock_ipdone;
     
     // Force I2C IP block outputs (simulation only)
+    // This allows us to mock the System Bus responses
     initial begin
         force dut.i2c1_ip.sb_dat_o = mock_sb_data_o;
         force dut.i2c1_ip.sb_ack_o = mock_sb_ack_o;

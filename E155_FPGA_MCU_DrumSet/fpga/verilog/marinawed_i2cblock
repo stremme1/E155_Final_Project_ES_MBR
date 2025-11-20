@@ -1,6 +1,0 @@
-{
-  "i2c_left_enable": true,
-  "i2c_left_desired_frequency": 400,
-  "i2c_left_tx_rx_ready": true,
-  "i2c_left_overrun_or_nack": true
-}
