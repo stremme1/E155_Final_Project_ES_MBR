@@ -58,11 +58,12 @@ module drum_system_top (
     // Module name: i2c_block (from Module Generator)
     
     i2c_block i2c1_ip (
-        // I2C Physical Pins - MUST match top module ports
-        .i2c1_scl_io(i2c1_scl),      // I2C1 Clock (physical pin)
-        .i2c1_sda_io(i2c1_sda),      // I2C1 Data (physical pin)
+        // I2C Physical Pins - MUST match Module Generator port order
+        // NOTE: Port order is I2C2 first, then I2C1 (as per Module Generator)
         .i2c2_scl_io(),              // I2C2 Clock (not used - leave unconnected)
         .i2c2_sda_io(),              // I2C2 Data (not used - leave unconnected)
+        .i2c1_scl_io(i2c1_scl),      // I2C1 Clock (physical pin)
+        .i2c1_sda_io(i2c1_sda),      // I2C1 Data (physical pin)
         
         // Reset and IP Configuration
         .rst_i(!rst_n),              // Active-high reset (invert rst_n)
