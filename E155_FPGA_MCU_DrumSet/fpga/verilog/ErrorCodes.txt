@@ -1,5 +1,6 @@
-Critical	35001476	Synthesis	CRITICAL <35001476> - A top-level module has not been specified for the mixed language design.	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM9 is not connected on this instance. VDB-5050	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(1): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_addsub.v. VERI-1328 [pmi_ice40up.v:1]	
-Error	35901348	Synthesis	ERROR <35901348> - c:/users/estralka/desktop/e155_final_project_es_mbr-main/e155_fpga_mcu_drumset/e155_finalp/source/impl_1/bno055_i2c_controller_gyro_only.sv(123): an enum variable may only be assigned to same enum typed variable or one of its values. VERI-1348 [bno055_i2c_controller_gyro_only.sv:123]	
-Synthesis (1 errors, 1 criticals, 11 warnings, 33 info)	
+Info	35001774	Synthesis	INFO <35001774> - Extracted state machine for register 'state' with one-hot encoding	
+Critical	35001747	Synthesis	CRITICAL <35001747> - Bit(s) of register driving sb_addr_in[7:0] stuck at '0': 7, 6, 5, 4, 3, 2, 0	
+Warning	35935040	Synthesis	WARNING <35935040> - Register sb_data_i_i1 clock is stuck at Zero. VDB-5040	
+Warning	71003020	Map	WARNING <71003020> - Top module port 'sb_clk' does not connect to anything.	
+Error	51001122	Map	ERROR <51001122> - Design doesn't fit into device specified, refer to the design summary section for more details.	
+Map (1 errors, 4 warnings)	
