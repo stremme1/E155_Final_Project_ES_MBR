@@ -108,11 +108,19 @@ module drum_system_top_tb;
     endtask
     
     task wait_cycles(input integer cycles);
-        repeat(cycles) @(posedge clk_ext);
+        integer i;
+        for (i = 0; i < cycles; i = i + 1) begin
+            @(posedge clk_ext);
+        end
     endtask
     
     // Initialize
     initial begin
+        $display("\n==========================================");
+        $display("COMPREHENSIVE DRUM SYSTEM TEST BENCH");
+        $display("Starting simulation...");
+        $display("==========================================\n");
+        
         // Initialize signals
         rst_n = 0;
         button1 = 0;
@@ -121,7 +129,7 @@ module drum_system_top_tb;
         bno085_2_int_enable = 0;
         
         // Initialize mock data
-        mock_quat1_w = 16'd32768;  // 0.5 in Q16
+        mock_quat1_w = 17'd32768;  // 0.5 in Q16
         mock_quat1_x = 16'd0;
         mock_quat1_y = 16'd0;
         mock_quat1_z = 16'd0;
@@ -129,7 +137,7 @@ module drum_system_top_tb;
         mock_gyro1_y = 16'd0;
         mock_gyro1_z = 16'd0;
         
-        mock_quat2_w = 16'd32768;
+        mock_quat2_w = 17'd32768;
         mock_quat2_x = 16'd0;
         mock_quat2_y = 16'd0;
         mock_quat2_z = 16'd0;
@@ -137,13 +145,11 @@ module drum_system_top_tb;
         mock_gyro2_y = 16'd0;
         mock_gyro2_z = 16'd0;
         
+        $display("Initializing reset sequence...");
         wait_cycles(10);
         rst_n = 1;
+        $display("Reset released, waiting for initialization...");
         wait_cycles(100);
-        
-        $display("\n==========================================");
-        $display("COMPREHENSIVE DRUM SYSTEM TEST BENCH");
-        $display("==========================================\n");
         
         // Run test suites
         test_suite_1_reset_and_initialization();
@@ -165,13 +171,13 @@ module drum_system_top_tb;
         $display("==========================================\n");
         
         if (fail_count == 0) begin
-            $display("✓ ALL TESTS PASSED - READY FOR FPGA");
+            $display("ALL TESTS PASSED - READY FOR FPGA");
         end else begin
-            $display("✗ SOME TESTS FAILED - REVIEW REQUIRED");
+            $display("SOME TESTS FAILED - REVIEW REQUIRED");
         end
         
-        #10000;
-        $display("\nTest bench completed.");
+        $display("\nTest bench completed. Exiting simulation...");
+        #1000;
         $finish;
     end
     
@@ -180,6 +186,7 @@ module drum_system_top_tb;
     // ========================================================================
     task test_suite_1_reset_and_initialization();
         $display("\n--- TEST SUITE 1: Reset and Initialization ---");
+        $display("Running reset and initialization tests...");
         
         // Test 1.1: Reset sequence
         rst_n = 0;
@@ -192,7 +199,7 @@ module drum_system_top_tb;
         
         // Test 1.2: Release reset
         rst_n = 1;
-        wait_cycles(100000);  // Wait for reset sequence (~100ms)
+        wait_cycles(1000);  // Wait for reset sequence (reduced for testing)
         test_assert(bno085_1_rst_n == 1, "After reset: bno085_1_rst_n should be high");
         test_assert(bno085_2_rst_n == 1, "After reset: bno085_2_rst_n should be high");
         
@@ -210,7 +217,7 @@ module drum_system_top_tb;
         test_assert(spi_sclk !== 1'bx, "SPI clock should be driven");
         
         // Test 2.2: CS lines alternate
-        wait_cycles(500000);  // Wait for CS multiplexing
+        wait_cycles(2000);  // Wait for CS multiplexing (reduced for testing)
         test_assert(spi_cs1_n !== 1'bx, "CS1 should be driven");
         test_assert(spi_cs2_n !== 1'bx, "CS2 should be driven");
         
@@ -235,7 +242,7 @@ module drum_system_top_tb;
         mock_quat1_z = 16'd0;
         
         bno085_1_int_enable = 1;
-        wait_cycles(2500000);  // Wait for data processing
+        wait_cycles(1000);  // Wait for data processing (reduced for testing)
         
         // Test 3.2: 90-degree rotation around Z-axis
         mock_quat1_w = 16'd46341;  // cos(45°) ≈ 0.707 in Q16
@@ -243,7 +250,7 @@ module drum_system_top_tb;
         mock_quat1_y = 16'd0;
         mock_quat1_z = 16'd46341;  // sin(45°) ≈ 0.707 in Q16
         
-        wait_cycles(2500000);
+        wait_cycles(1000);
         
         $display("--- TEST SUITE 3 COMPLETE ---\n");
     endtask
@@ -262,12 +269,12 @@ module drum_system_top_tb;
         mock_quat1_z = 16'd46341;
         mock_gyro1_y = -16'd3000;  // Below threshold
         
-        wait_cycles(2500000);
+        wait_cycles(1000);
         // Note: Actual sound_id depends on full pipeline
         
         // Test 4.2: Kick drum (button1)
         button1 = 1;
-        wait_cycles(2500000);
+        wait_cycles(1000);
         test_assert(sound_id == 8'h02, "Button1 should trigger KICK (0x02)");
         button1 = 0;
         
@@ -279,7 +286,7 @@ module drum_system_top_tb;
         mock_quat1_z = 16'd1138;  // Small rotation
         mock_gyro1_y = -16'd3000;
         
-        wait_cycles(2500000);
+        wait_cycles(1000);
         
         $display("--- TEST SUITE 4 COMPLETE ---\n");
     endtask
@@ -292,11 +299,11 @@ module drum_system_top_tb;
         
         // Test 5.1: Calibration button press
         button2 = 1;
-        wait_cycles(2500000);  // Wait for debounce
+        wait_cycles(1000);  // Wait for debounce
         test_assert(led2 == 1, "Calibration LED should be on");
         
         button2 = 0;
-        wait_cycles(2500000);
+        wait_cycles(1000);
         test_assert(led2 == 0, "Calibration LED should be off");
         
         $display("--- TEST SUITE 5 COMPLETE ---\n");
@@ -315,11 +322,11 @@ module drum_system_top_tb;
             button1 = 0;
             wait_cycles(100);
         end
-        wait_cycles(2500000);
+        wait_cycles(1000);
         
         // Test 6.2: Sustained button press
         button1 = 1;
-        wait_cycles(2500000);
+        wait_cycles(1000);
         button1 = 0;
         
         $display("--- TEST SUITE 6 COMPLETE ---\n");
@@ -336,14 +343,14 @@ module drum_system_top_tb;
         mock_quat1_x = 16'd0;
         mock_quat1_y = 16'd0;
         mock_quat1_z = 16'd0;
-        wait_cycles(2500000);
+        wait_cycles(1000);
         
         // Test 7.2: Yaw at boundary (360 degrees)
         mock_quat1_w = 17'd65536;
         mock_quat1_x = 16'd0;
         mock_quat1_y = 16'd0;
         mock_quat1_z = 16'd0;
-        wait_cycles(2500000);
+        wait_cycles(1000);
         
         // Test 7.3: Extreme gyro values
         mock_gyro1_y = -16'd32768;  // Maximum negative
@@ -354,7 +361,7 @@ module drum_system_top_tb;
         // Test 7.4: Both buttons pressed
         button1 = 1;
         button2 = 1;
-        wait_cycles(2500000);
+        wait_cycles(1000);
         button1 = 0;
         button2 = 0;
         
@@ -376,7 +383,7 @@ module drum_system_top_tb;
         mock_gyro1_y = -16'd3000;
         
         bno085_1_int_enable = 1;
-        wait_cycles(5000000);  // Wait for full pipeline
+        wait_cycles(2000);  // Wait for full pipeline
         
         // Test 8.2: Left hand hi-hat
         mock_quat2_w = 16'd46341;
@@ -387,16 +394,16 @@ module drum_system_top_tb;
         mock_gyro2_z = -16'd1000;  // Above threshold
         
         bno085_2_int_enable = 1;
-        wait_cycles(5000000);
+        wait_cycles(2000);
         
         // Test 8.3: Calibration then gesture
         button2 = 1;
-        wait_cycles(2500000);
+        wait_cycles(1000);
         button2 = 0;
         wait_cycles(1000000);
         
         mock_gyro1_y = -16'd3000;
-        wait_cycles(5000000);
+        wait_cycles(2000);
         
         $display("--- TEST SUITE 8 COMPLETE ---\n");
     endtask
