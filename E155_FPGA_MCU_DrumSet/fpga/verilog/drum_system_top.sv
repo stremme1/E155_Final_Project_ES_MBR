@@ -58,27 +58,31 @@ module drum_system_top (
     // Module name: i2c_block (from Module Generator)
     
     // I2C IP Block Instantiation
-    // NOTE: Using positional connections to work around port name mismatch
-    // The Module Generator file at E155_finalp/i2c_block/rtl/i2c_block.v may have different port names
-    // Port order (from Module Generator): i2c2_scl_io, i2c2_sda_io, i2c1_scl_io, i2c1_sda_io, rst_i, ipload_i, ipdone_o,
-    //                                     sb_clk_i, sb_wr_i, sb_stb_i, sb_adr_i, sb_dat_i, sb_dat_o, sb_ack_o, i2c_pirq_o, i2c_pwkup_o
+    // CRITICAL: Ensure i2c_block.v from this repository is added to Radiant project
+    // If Module Generator file has different ports, copy our i2c_block.v to replace it
+    // Port mapping: I2C Left = i2c2, I2C Right = i2c1 (confusing but that's how it is)
     i2c_block i2c1_ip (
-        1'bZ,              // i2c2_scl_io (I2C2 Clock - unused, high-Z)
-        1'bZ,              // i2c2_sda_io (I2C2 Data - unused, high-Z)
-        i2c1_scl,          // i2c1_scl_io (I2C1 Clock - physical pin)
-        i2c1_sda,          // i2c1_sda_io (I2C1 Data - physical pin)
-        !rst_n,            // rst_i (Active-high reset - invert rst_n)
-        i2c1_ipload,       // ipload_i (IP Load - start configuration)
-        i2c1_ipdone,       // ipdone_o (IP Done - configuration complete)
-        i2c1_sb_clk,       // sb_clk_i (System Bus Clock)
-        i2c1_sb_wr,        // sb_wr_i (System Bus Write: 0=read, 1=write)
-        i2c1_sb_stb,       // sb_stb_i (System Bus Strobe)
-        i2c1_sb_addr,       // sb_adr_i (System Bus Address)
-        i2c1_sb_data_i,    // sb_dat_i (System Bus Data Input)
-        i2c1_sb_data_o,    // sb_dat_o (System Bus Data Output)
-        i2c1_sb_ack,       // sb_ack_o (System Bus Acknowledge)
-        i2c_pirq_o,        // i2c_pirq_o (I2C Interrupt [1:0] vector)
-        2'b00              // i2c_pwkup_o (I2C Wakeup [1:0] - unused)
+        // I2C Physical Pins - try both naming conventions
+        .i2c2_scl_io(1'bZ),              // I2C Left (unused)
+        .i2c2_sda_io(1'bZ),              // I2C Left (unused)
+        .i2c1_scl_io(i2c1_scl),          // I2C Right (USED - this is I2C1)
+        .i2c1_sda_io(i2c1_sda),          // I2C Right (USED - this is I2C1)
+        
+        // Reset and IP Configuration
+        .rst_i(!rst_n),                  // Active-high reset
+        .ipload_i(i2c1_ipload),          // IP Load
+        .ipdone_o(i2c1_ipdone),          // IP Done
+        
+        // System Bus Interface
+        .sb_clk_i(i2c1_sb_clk),          // System Bus Clock
+        .sb_wr_i(i2c1_sb_wr),            // System Bus Write
+        .sb_stb_i(i2c1_sb_stb),          // System Bus Strobe
+        .sb_adr_i(i2c1_sb_addr),         // System Bus Address
+        .sb_dat_i(i2c1_sb_data_i),      // System Bus Data Input
+        .sb_dat_o(i2c1_sb_data_o),       // System Bus Data Output
+        .sb_ack_o(i2c1_sb_ack),          // System Bus Acknowledge
+        .i2c_pirq_o(i2c_pirq_o),         // I2C Interrupt [1:0]
+        .i2c_pwkup_o()                   // I2C Wakeup [1:0] (unused)
     );
     
     // Extract I2C1 interrupt from vector
