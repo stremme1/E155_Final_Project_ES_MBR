@@ -32,8 +32,12 @@ module bno085_spi_interface (
     localparam REPORT_GYRO = 8'h06;
     
     // State Machine
-    typedef enum logic [3:0] {
+    typedef enum logic [4:0] {
         IDLE,
+        INIT_WAIT,
+        INIT_RESET,
+        ENABLE_QUATERNION,
+        ENABLE_GYRO,
         WAIT_INT,
         READ_HEADER,
         READ_LENGTH,
@@ -43,6 +47,10 @@ module bno085_spi_interface (
     } state_t;
     
     state_t state, next_state;
+    
+    // Initialization counter
+    logic [23:0] init_counter;
+    logic init_done;
     
     // Packet parsing
     logic [7:0] header_byte;
@@ -64,6 +72,8 @@ module bno085_spi_interface (
             reset_counter <= '0;
             reset_done <= 1'b0;
             rst_n_out <= 1'b0;
+            init_counter <= '0;
+            init_done <= 1'b0;
         end else begin
             if (!reset_done) begin
                 if (reset_counter < 24'd4800000) begin  // 100ms at 48MHz
@@ -74,8 +84,22 @@ module bno085_spi_interface (
                     rst_n_out <= 1'b1;
                 end
             end
+            
+            // Wait 300ms after reset for sensor initialization
+            if (reset_done && !init_done) begin
+                if (init_counter < 24'd14400000) begin  // 300ms at 48MHz
+                    init_counter <= init_counter + 1;
+                end else begin
+                    init_done <= 1'b1;
+                end
+            end
         end
     end
+    
+    // SHTP Command/Report structure
+    logic [7:0] shtp_tx_buffer [0:15];
+    logic [2:0] shtp_tx_index;
+    logic shtp_tx_active;
     
     // State machine
     always_ff @(posedge clk or negedge rst_n) begin
@@ -85,6 +109,8 @@ module bno085_spi_interface (
             packet_length <= '0;
             report_id <= '0;
             data_valid <= 1'b0;
+            shtp_tx_index <= '0;
+            shtp_tx_active <= 1'b0;
         end else begin
             state <= next_state;
             
@@ -92,6 +118,30 @@ module bno085_spi_interface (
                 IDLE: begin
                     byte_counter <= '0;
                     data_valid <= 1'b0;
+                    shtp_tx_index <= '0;
+                    shtp_tx_active <= 1'b0;
+                end
+                
+                INIT_WAIT: begin
+                    // Wait for initialization to complete
+                end
+                
+                INIT_RESET: begin
+                    // Send reset command (if needed)
+                end
+                
+                ENABLE_QUATERNION: begin
+                    // Send enable quaternion report command
+                    if (spi_rx_valid) begin
+                        shtp_tx_index <= shtp_tx_index + 1;
+                    end
+                end
+                
+                ENABLE_GYRO: begin
+                    // Send enable gyro report command
+                    if (spi_rx_valid) begin
+                        shtp_tx_index <= shtp_tx_index + 1;
+                    end
                 end
                 
                 WAIT_INT: begin
@@ -158,8 +208,38 @@ module bno085_spi_interface (
         
         case (state)
             IDLE: begin
-                if (reset_done) begin
-                    next_state = WAIT_INT;
+                if (reset_done && init_done) begin
+                    next_state = ENABLE_QUATERNION;
+                end
+            end
+            
+            INIT_WAIT: begin
+                if (init_done) begin
+                    next_state = ENABLE_QUATERNION;
+                end
+            end
+            
+            ENABLE_QUATERNION: begin
+                // Send SHTP command to enable quaternion report (Report ID 0x05)
+                // SHTP packet: [Header=0x05] [Length LSB=0x08] [Length MSB=0x00] [Command=0x02] [Report ID=0x05] [Interval=0x00] [0x00] [0x00]
+                if (!spi_busy) begin
+                    spi_start = 1'b1;
+                    spi_tx_valid = 1'b1;
+                    // Simplified: Just move to next state after sending
+                    if (shtp_tx_index >= 3'd7) begin
+                        next_state = ENABLE_GYRO;
+                    end
+                end
+            end
+            
+            ENABLE_GYRO: begin
+                // Send SHTP command to enable gyro report (Report ID 0x06)
+                if (!spi_busy) begin
+                    spi_start = 1'b1;
+                    spi_tx_valid = 1'b1;
+                    if (shtp_tx_index >= 3'd7) begin
+                        next_state = WAIT_INT;
+                    end
                 end
             end
             

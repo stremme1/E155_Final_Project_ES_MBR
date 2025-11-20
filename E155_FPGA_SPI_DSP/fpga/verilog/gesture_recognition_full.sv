@@ -64,11 +64,30 @@ module gesture_recognition_full (
     // Debounce flags (matching C code)
     logic printedForGyro1y, printedForGyro2y;
     logic button1_prev, button1_debounced;
-    logic [15:0] button1_debounce_counter;
+    logic [23:0] button1_debounce_counter;  // Fixed: 24-bit for 2,400,000 count
     
     // Sound detection logic
     logic [7:0] sound_id_comb;
     logic sound_valid_comb;
+    
+    // Pipeline registers for data_valid synchronization
+    logic data1_valid_sync, data2_valid_sync;
+    logic data1_valid_pipe, data2_valid_pipe;
+    
+    // Synchronize data_valid signals
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            data1_valid_sync <= 1'b0;
+            data2_valid_sync <= 1'b0;
+            data1_valid_pipe <= 1'b0;
+            data2_valid_pipe <= 1'b0;
+        end else begin
+            data1_valid_pipe <= data1_valid;
+            data2_valid_pipe <= data2_valid;
+            data1_valid_sync <= data1_valid_pipe;
+            data2_valid_sync <= data2_valid_pipe;
+        end
+    end
     
     // Gyro debouncing (matching C code logic)
     always_ff @(posedge clk or negedge rst_n) begin
@@ -84,24 +103,28 @@ module gesture_recognition_full (
             // Button1 debouncing (50ms = 2400000 cycles at 48MHz)
             if (button1 != button1_prev) begin
                 button1_debounce_counter <= '0;
-            end else if (button1_debounce_counter < 16'd2400000) begin
+            end else if (button1_debounce_counter < 24'd2400000) begin
                 button1_debounce_counter <= button1_debounce_counter + 1;
             end else begin
                 button1_debounced <= button1;
             end
             
-            // Gyro1_y debouncing
-            if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                printedForGyro1y <= 1'b1;
-            end else if (gyro1_y >= GYRO_THRESHOLD_Y && printedForGyro1y) begin
-                printedForGyro1y <= 1'b0;
+            // Gyro1_y debouncing (only update when data is valid)
+            if (data1_valid_sync) begin
+                if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
+                    printedForGyro1y <= 1'b1;
+                end else if (gyro1_y >= GYRO_THRESHOLD_Y && printedForGyro1y) begin
+                    printedForGyro1y <= 1'b0;
+                end
             end
             
-            // Gyro2_y debouncing
-            if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
-                printedForGyro2y <= 1'b1;
-            end else if (gyro2_y >= GYRO_THRESHOLD_Y && printedForGyro2y) begin
-                printedForGyro2y <= 1'b0;
+            // Gyro2_y debouncing (only update when data is valid)
+            if (data2_valid_sync) begin
+                if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
+                    printedForGyro2y <= 1'b1;
+                end else if (gyro2_y >= GYRO_THRESHOLD_Y && printedForGyro2y) begin
+                    printedForGyro2y <= 1'b0;
+                end
             end
         end
     end
@@ -111,55 +134,58 @@ module gesture_recognition_full (
         sound_id_comb = NO_SOUND;
         sound_valid_comb = 1'b0;
         
-        // Button1: Kick drum
+        // Button1: Kick drum (priority - checked first)
         if (button1_debounced) begin
             sound_id_comb = SOUND_KICK;
             sound_valid_comb = 1'b1;
         end
-        // Right hand yaw ranges
-        else if (yaw1_normalized >= YAW_20 && yaw1_normalized <= YAW_120) begin
-            // Yaw 20-120: Snare drum
-            if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                sound_id_comb = SOUND_SNARE;
-                sound_valid_comb = 1'b1;
-            end
-        end
-        else if ((yaw1_normalized >= YAW_340) || (yaw1_normalized <= YAW_20)) begin
-            // Yaw 340-360 or 0-20: High tom or Crash
-            if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                if (pitch1 > PITCH_THRESHOLD_HIGH) begin
-                    sound_id_comb = SOUND_CRASH;
-                end else begin
-                    sound_id_comb = SOUND_HIGH_TOM;
+        // Only check gestures if button1 is not pressed and data is valid
+        else if (data1_valid_sync) begin
+            // Right hand yaw ranges
+            if (yaw1_normalized >= YAW_20 && yaw1_normalized <= YAW_120) begin
+                // Yaw 20-120: Snare drum
+                if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
+                    sound_id_comb = SOUND_SNARE;
+                    sound_valid_comb = 1'b1;
                 end
-                sound_valid_comb = 1'b1;
             end
-        end
-        else if (yaw1_normalized >= YAW_305 && yaw1_normalized <= YAW_340) begin
-            // Yaw 305-340: Mid tom or Ride
-            if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                if (pitch1 > PITCH_THRESHOLD_HIGH) begin
-                    sound_id_comb = SOUND_RIDE;
-                end else begin
-                    sound_id_comb = SOUND_MID_TOM;
+            else if ((yaw1_normalized >= YAW_340) || (yaw1_normalized <= YAW_20)) begin
+                // Yaw 340-360 or 0-20: High tom or Crash
+                if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
+                    if (pitch1 > PITCH_THRESHOLD_HIGH) begin
+                        sound_id_comb = SOUND_CRASH;
+                    end else begin
+                        sound_id_comb = SOUND_HIGH_TOM;
+                    end
+                    sound_valid_comb = 1'b1;
                 end
-                sound_valid_comb = 1'b1;
             end
-        end
-        else if (yaw1_normalized >= YAW_200 && yaw1_normalized <= YAW_305) begin
-            // Yaw 200-305: Floor tom or Ride
-            if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
-                if (pitch1 > PITCH_THRESHOLD_LOW) begin
-                    sound_id_comb = SOUND_RIDE;
-                end else begin
-                    sound_id_comb = SOUND_FLOOR_TOM;
+            else if (yaw1_normalized >= YAW_305 && yaw1_normalized <= YAW_340) begin
+                // Yaw 305-340: Mid tom or Ride
+                if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
+                    if (pitch1 > PITCH_THRESHOLD_HIGH) begin
+                        sound_id_comb = SOUND_RIDE;
+                    end else begin
+                        sound_id_comb = SOUND_MID_TOM;
+                    end
+                    sound_valid_comb = 1'b1;
                 end
-                sound_valid_comb = 1'b1;
+            end
+            else if (yaw1_normalized >= YAW_200 && yaw1_normalized <= YAW_305) begin
+                // Yaw 200-305: Floor tom or Ride
+                if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
+                    if (pitch1 > PITCH_THRESHOLD_LOW) begin
+                        sound_id_comb = SOUND_RIDE;
+                    end else begin
+                        sound_id_comb = SOUND_FLOOR_TOM;
+                    end
+                    sound_valid_comb = 1'b1;
+                end
             end
         end
         
         // Left Hand Logic (IMU2) - matching C code exactly
-        if (!sound_valid_comb) begin
+        if (!sound_valid_comb && data2_valid_sync) begin
             if ((yaw2_normalized >= YAW_350) || (yaw2_normalized <= YAW_100)) begin
                 // Yaw 350-360 or 0-100: Snare or Hi-hat
                 if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin

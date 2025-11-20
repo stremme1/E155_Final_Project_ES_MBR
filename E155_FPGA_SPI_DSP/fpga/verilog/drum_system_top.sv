@@ -86,24 +86,48 @@ module drum_system_top (
     assign imu1_busy = spi_busy & imu1_start;
     assign imu2_busy = spi_busy & imu2_start;
     
-    // CS lines (simple time-multiplexing)
-    logic [15:0] cs_counter;
-    logic cs_select;  // 0 = IMU1, 1 = IMU2
+    // CS lines (controlled by SPI transactions, not independent time-multiplexing)
+    // CS should be asserted by the SPI controller during transactions
+    // Time-multiplexing happens at higher level (which IMU to read)
+    logic [15:0] imu_select_counter;
+    logic imu_select;  // 0 = IMU1, 1 = IMU2
+    
+    // Time-multiplex IMU selection (~10ms intervals)
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            cs_counter <= '0;
-            cs_select <= 1'b0;
+            imu_select_counter <= '0;
+            imu_select <= 1'b0;
         end else begin
-            if (cs_counter >= 16'd480000) begin  // ~10ms at 48MHz
-                cs_counter <= '0;
-                cs_select <= ~cs_select;
+            if (imu_select_counter >= 16'd480000) begin  // ~10ms at 48MHz
+                imu_select_counter <= '0;
+                imu_select <= ~imu_select;
             end else begin
-                cs_counter <= cs_counter + 1;
+                imu_select_counter <= imu_select_counter + 1;
             end
         end
     end
-    assign spi_cs1_n = cs_select ? 1'b1 : (imu1_start ? 1'b0 : 1'b1);
-    assign spi_cs2_n = cs_select ? (imu2_start ? 1'b0 : 1'b1) : 1'b1;
+    
+    // CS control: Assert CS for selected IMU only when SPI is active
+    // CS must be stable during entire SPI transaction
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            spi_cs1_n <= 1'b1;
+            spi_cs2_n <= 1'b1;
+        end else begin
+            // Only assert CS when SPI transaction is active for selected IMU
+            if (!imu_select && (imu1_start || spi_busy)) begin
+                spi_cs1_n <= 1'b0;  // IMU1 selected and active
+            end else begin
+                spi_cs1_n <= 1'b1;
+            end
+            
+            if (imu_select && (imu2_start || spi_busy)) begin
+                spi_cs2_n <= 1'b0;  // IMU2 selected and active
+            end else begin
+                spi_cs2_n <= 1'b1;
+            end
+        end
+    end
     
     // ========================================================================
     // BNO085 SPI Interfaces (2x - one per IMU)
