@@ -65,11 +65,11 @@ module bno055_i2c_controller_ultra_minimal (
                         sb_wr <= 1;  // Write operation
                         sb_addr <= I2C_CTRL_REG;
                         sb_data_i <= 8'h0;  // Start read command
-                        if (sb_ack) begin
-                            sb_stb <= 0;
-                            byte_cnt <= 0;
-                            state <= READ_DATA;
-                        end
+                    end
+                    if (sb_ack && sb_stb) begin
+                        sb_stb <= 0;
+                        byte_cnt <= 0;
+                        state <= READ_DATA;
                     end
                 end
                 
@@ -78,30 +78,33 @@ module bno055_i2c_controller_ultra_minimal (
                         sb_stb <= 1;
                         sb_wr <= 0;  // Read operation
                         sb_addr <= I2C_RX_REG;
-                        if (sb_ack) begin
-                            sb_stb <= 0;
-                            case (byte_cnt)
-                                2'd0: begin  // Gyro Y LSB
-                                    byte_lsb <= sb_data_o;
-                                    byte_cnt <= 1;
-                                end
-                                2'd1: begin  // Gyro Y MSB
-                                    gyro_y_reg <= $signed({sb_data_o, byte_lsb});
-                                    byte_lsb <= sb_data_o;
-                                    byte_cnt <= 2;
-                                end
-                                2'd2: begin  // Gyro Z LSB
-                                    byte_lsb <= sb_data_o;
-                                    byte_cnt <= 3;
-                                end
-                                2'd3: begin  // Gyro Z MSB
-                                    gyro_z_reg <= $signed({sb_data_o, byte_lsb});
-                                    data_valid <= 1;
-                                    byte_cnt <= 0;
-                                    state <= IDLE;
-                                end
-                            endcase
-                        end
+                    end
+                    if (sb_ack && sb_stb) begin
+                        sb_stb <= 0;
+                        case (byte_cnt)
+                            2'd0: begin  // Gyro Y LSB
+                                byte_lsb <= sb_data_o;
+                                byte_cnt <= 1;
+                                state <= READ_DATA;  // Continue reading
+                            end
+                            2'd1: begin  // Gyro Y MSB
+                                gyro_y_reg <= $signed({sb_data_o, byte_lsb});
+                                byte_lsb <= sb_data_o;
+                                byte_cnt <= 2;
+                                state <= READ_DATA;  // Continue reading
+                            end
+                            2'd2: begin  // Gyro Z LSB
+                                byte_lsb <= sb_data_o;
+                                byte_cnt <= 3;
+                                state <= READ_DATA;  // Continue reading
+                            end
+                            2'd3: begin  // Gyro Z MSB
+                                gyro_z_reg <= $signed({sb_data_o, byte_lsb});
+                                data_valid <= 1;
+                                byte_cnt <= 0;
+                                state <= IDLE;
+                            end
+                        endcase
                     end
                 end
             endcase
