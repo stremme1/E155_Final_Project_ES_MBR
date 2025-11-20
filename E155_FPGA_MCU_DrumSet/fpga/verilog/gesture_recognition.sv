@@ -86,27 +86,20 @@ module gesture_recognition (
             gyro1_y_prev <= gyro1_y;
             gyro2_y_prev <= gyro2_y;
             
-            // Simplified debounce logic
+            // EXTREME: Simplified debounce - just track edge
             if (gyro1_y < GYRO_THRESHOLD_Y && gyro1_y_prev >= GYRO_THRESHOLD_Y) begin
-                printedForGyro1y <= 0;
+                printedForGyro1y <= 0;  // Falling edge - reset flag
             end else if (gyro1_y >= GYRO_THRESHOLD_Y) begin
-                printedForGyro1y <= 0;
-            end else if (gyro1_trigger && !printedForGyro1y && 
-                         (yaw1_norm <= 16'd12000 || yaw1_norm >= 16'd34000 || 
-                          yaw1_norm <= 16'd2000 || (yaw1_norm >= 16'd30500 && yaw1_norm <= 16'd34000) ||
-                          (yaw1_norm >= 16'd20000 && yaw1_norm <= 16'd30500))) begin
-                printedForGyro1y <= 1;
+                printedForGyro1y <= 0;  // Above threshold - reset flag
+            end else if (gyro1_trigger && !printedForGyro1y) begin
+                printedForGyro1y <= 1;  // Set flag when triggered (yaw check in comb logic)
             end
             
             if (gyro2_y < GYRO_THRESHOLD_Y && gyro2_y_prev >= GYRO_THRESHOLD_Y) begin
                 printedForGyro2y <= 0;
             end else if (gyro2_y >= GYRO_THRESHOLD_Y) begin
                 printedForGyro2y <= 0;
-            end else if (gyro2_trigger && !printedForGyro2y &&
-                         ((yaw2_norm >= 16'd35000 || yaw2_norm <= 16'd10000) ||
-                          (yaw2_norm >= 16'd32500 && yaw2_norm <= 16'd35000) ||
-                          (yaw2_norm >= 16'd30000 && yaw2_norm <= 16'd32500) ||
-                          (yaw2_norm >= 16'd20000 && yaw2_norm <= 16'd30000))) begin
+            end else if (gyro2_trigger && !printedForGyro2y) begin
                 printedForGyro2y <= 1;
             end
         end
@@ -121,33 +114,24 @@ module gesture_recognition (
             sound_id = SOUND_KICK;
         end
         else if (gyro1_trigger && !printedForGyro1y) begin
-            // Right hand logic (simplified comparisons)
+            // Right hand logic - simplified to 3 zones
             if (yaw1_norm <= 16'd12000) begin
                 sound_id = SOUND_SNARE;
             end
             else if (yaw1_norm >= 16'd34000 || yaw1_norm <= 16'd2000) begin
                 sound_id = (pitch1 > PITCH_THRESHOLD_HIGH) ? SOUND_CRASH : SOUND_HIGH_TOM;
             end
-            else if (yaw1_norm >= 16'd30500 && yaw1_norm <= 16'd34000) begin
-                sound_id = (pitch1 > PITCH_THRESHOLD_HIGH) ? SOUND_RIDE : SOUND_MID_TOM;
-            end
-            else if (yaw1_norm >= 16'd20000 && yaw1_norm <= 16'd30500) begin
+            else begin  // 2000-34000 range
                 sound_id = (pitch1 > PITCH_THRESHOLD_LOW) ? SOUND_RIDE : SOUND_FLOOR_TOM;
             end
         end
         else if (gyro2_trigger && !printedForGyro2y) begin
-            // Left hand logic (simplified comparisons)
+            // Left hand logic - simplified to 2 zones
             if (yaw2_norm >= 16'd35000 || yaw2_norm <= 16'd10000) begin
                 sound_id = (pitch2 > PITCH_THRESHOLD_LOW && gyro2_z > GYRO_THRESHOLD_Z) ? SOUND_HIHAT : SOUND_SNARE;
             end
-            else if (yaw2_norm >= 16'd32500 && yaw2_norm <= 16'd35000) begin
+            else begin  // 10000-35000 range
                 sound_id = (pitch2 > PITCH_THRESHOLD_HIGH) ? SOUND_CRASH : SOUND_HIGH_TOM;
-            end
-            else if (yaw2_norm >= 16'd30000 && yaw2_norm <= 16'd32500) begin
-                sound_id = (pitch2 > PITCH_THRESHOLD_HIGH) ? SOUND_RIDE : SOUND_MID_TOM;
-            end
-            else if (yaw2_norm >= 16'd20000 && yaw2_norm <= 16'd30000) begin
-                sound_id = (pitch2 > PITCH_THRESHOLD_LOW) ? SOUND_RIDE : SOUND_FLOOR_TOM;
             end
         end
     end

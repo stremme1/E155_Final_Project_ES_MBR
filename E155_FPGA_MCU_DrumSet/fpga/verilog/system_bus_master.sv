@@ -23,11 +23,11 @@ module system_bus_master (
     output logic        busy
 );
 
-    // EXTREME: Only 3 states
+    // EXTREME: Only 3 states with explicit encoding
     typedef enum logic [1:0] {
-        IDLE,
-        ACTIVE,
-        WAIT_ACK
+        IDLE = 2'b00,
+        ACTIVE = 2'b01,
+        WAIT_ACK = 2'b10
     } state_t;
     
     state_t state;

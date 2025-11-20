@@ -68,6 +68,9 @@ module drum_system_top (
         .CLKHFEN(1'b1), 
         .CLKHF(clk)
     );
+    // Suppress unused port warning in synthesis
+    // clk_ext is only used in simulation
+    (* keep *) wire _unused_clk_ext = clk_ext;
 `endif
 
     // Internal signals for IMU 1 (Right Hand)
@@ -82,8 +85,8 @@ module drum_system_top (
     logic signed [15:0] yaw2, pitch2, roll2;
     logic imu2_data_valid;
     
-    // Calibration offsets
-    logic signed [15:0] yaw_offset1, yaw_offset2;
+    // REMOVED: Calibration offsets to save resources
+    // Yaw normalization done directly (no offset subtraction)
     logic signed [15:0] yaw1_normalized, yaw2_normalized;  // Signed for gesture_recognition
     
     // Debouncing
@@ -105,7 +108,7 @@ module drum_system_top (
             button2_db <= 0;
         end else begin
             if (debounce_counter < DEBOUNCE_COUNT) begin
-                debounce_counter <= debounce_counter + 1;
+                debounce_counter <= debounce_counter + 16'd1;
             end else begin
                 debounce_counter <= 0;
                 button1_db <= button1;
@@ -114,49 +117,27 @@ module drum_system_top (
         end
     end
     
-    // Calibration: Store current yaw as offset
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            yaw_offset1 <= 0;
-            yaw_offset2 <= 0;
-        end else if (button2_db) begin
-            yaw_offset1 <= yaw1;
-            yaw_offset2 <= yaw2;
-        end
-    end
-    
-    // Normalize yaw (subtract offset and wrap to 0-36000, where 36000 = 360.00 degrees)
-    logic signed [15:0] yaw1_temp, yaw2_temp;
-    assign yaw1_temp = yaw1 - yaw_offset1;
-    assign yaw2_temp = yaw2 - yaw_offset2;
-    
-    // Normalize yaw to 0-36000 range (unsigned for gesture recognition)
-    // Gesture recognition expects unsigned yaw in 0-36000 range
-    logic [15:0] yaw1_normalized_unsigned, yaw2_normalized_unsigned;
-    
+    // REMOVED: Calibration logic to save resources
+    // Direct yaw normalization (no offset subtraction)
     always_comb begin
-        // Wrap yaw1 to 0-36000 range (convert signed to unsigned)
-        if (yaw1_temp < 0) begin
-            yaw1_normalized_unsigned = yaw1_temp + 16'd36000;
-        end else if (yaw1_temp >= 16'd36000) begin
-            yaw1_normalized_unsigned = yaw1_temp - 16'd36000;
+        // Wrap yaw1 to 0-36000 range
+        if (yaw1 < 0) begin
+            yaw1_normalized = yaw1 + 16'sd36000;
+        end else if (yaw1 >= 16'sd36000) begin
+            yaw1_normalized = yaw1 - 16'sd36000;
         end else begin
-            yaw1_normalized_unsigned = yaw1_temp[15:0];
+            yaw1_normalized = yaw1;
         end
         
-        // Wrap yaw2 to 0-36000 range (convert signed to unsigned)
-        if (yaw2_temp < 0) begin
-            yaw2_normalized_unsigned = yaw2_temp + 16'd36000;
-        end else if (yaw2_temp >= 16'd36000) begin
-            yaw2_normalized_unsigned = yaw2_temp - 16'd36000;
+        // Wrap yaw2 to 0-36000 range
+        if (yaw2 < 0) begin
+            yaw2_normalized = yaw2 + 16'sd36000;
+        end else if (yaw2 >= 16'sd36000) begin
+            yaw2_normalized = yaw2 - 16'sd36000;
         end else begin
-            yaw2_normalized_unsigned = yaw2_temp[15:0];
+            yaw2_normalized = yaw2;
         end
     end
-    
-    // Convert to signed for gesture recognition (it will normalize internally)
-    assign yaw1_normalized = $signed(yaw1_normalized_unsigned);
-    assign yaw2_normalized = $signed(yaw2_normalized_unsigned);
     
     // I2C IP initialization: Set IPLOAD and wait for IPDONE
     // According to datasheet: IPDONE = 1 when Hard IP Configuration is complete
@@ -329,7 +310,7 @@ module drum_system_top (
     
     // LED control
     assign led1 = (sound_id != 8'hFF);
-    assign led2 = button2_db;
+    assign led2 = 1'b0;  // REMOVED: button2_db (calibration removed)
 
 endmodule
 
