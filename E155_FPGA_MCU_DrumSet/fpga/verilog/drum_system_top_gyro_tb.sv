@@ -37,17 +37,41 @@ module drum_system_top_gyro_tb;
         .sound_id(sound_id)
     );
     
-    // Access internal System Bus signals for monitoring/mocking
-    wire i2c1_sb_clk = dut.i2c1_sb_clk;
-    wire i2c1_sb_wr = dut.i2c1_sb_wr;
-    wire i2c1_sb_stb = dut.i2c1_sb_stb;
-    wire [7:0] i2c1_sb_addr = dut.i2c1_sb_addr;
-    wire [7:0] i2c1_sb_data_i = dut.i2c1_sb_data_i;
-    wire [7:0] i2c1_sb_data_o = dut.i2c1_sb_data_o;
-    wire i2c1_sb_ack = dut.i2c1_sb_ack;
-    wire i2c1_irq = dut.i2c1_irq;
-    wire i2c1_ipload = dut.i2c1_ipload;
-    wire i2c1_ipdone = dut.i2c1_ipdone;
+    // Access internal System Bus signals for monitoring
+    wire i2c1_sb_clk;
+    wire i2c1_sb_wr;
+    wire i2c1_sb_stb;
+    wire [7:0] i2c1_sb_addr;
+    wire [7:0] i2c1_sb_data_i;
+    wire [7:0] i2c1_sb_data_o;
+    wire i2c1_sb_ack;
+    wire i2c1_irq;
+    wire i2c1_ipload;
+    wire i2c1_ipdone;
+    
+    // Connect to internal signals using hierarchical references
+    assign i2c1_sb_clk = dut.i2c1_sb_clk;
+    assign i2c1_sb_wr = dut.i2c1_sb_wr;
+    assign i2c1_sb_stb = dut.i2c1_sb_stb;
+    assign i2c1_sb_addr = dut.i2c1_sb_addr;
+    assign i2c1_sb_data_i = dut.i2c1_sb_data_i;
+    assign i2c1_sb_data_o = dut.i2c1_sb_data_o;
+    assign i2c1_sb_ack = dut.i2c1_sb_ack;
+    assign i2c1_irq = dut.i2c1_irq;
+    assign i2c1_ipload = dut.i2c1_ipload;
+    assign i2c1_ipdone = dut.i2c1_ipdone;
+    
+    // Registers to drive I2C IP block outputs via force
+    reg [7:0] mock_sb_data_o;
+    reg mock_sb_ack_o;
+    reg mock_ipdone;
+    
+    // Force I2C IP block outputs (simulation only)
+    initial begin
+        force dut.i2c1_ip.sb_dat_o = mock_sb_data_o;
+        force dut.i2c1_ip.sb_ack_o = mock_sb_ack_o;
+        force dut.i2c1_ip.ipdone_o = mock_ipdone;
+    end
     
     // Clock generation
     initial begin
@@ -58,11 +82,6 @@ module drum_system_top_gyro_tb;
     // Mock I2C bus (pull-ups for simulation)
     pullup(i2c1_scl);
     pullup(i2c1_sda);
-    
-    // NOTE: For simulation, the I2C IP block (i2c_block) needs to be instantiated
-    // OR we need to mock the System Bus responses directly
-    // Since we can't easily mock the I2C IP in simulation, we'll drive the internal
-    // System Bus signals that the I2C controller expects
     
     // Mock System Bus responses (simulating I2C IP behavior)
     reg [7:0] mock_gyro_data [0:5];  // X, Y, Z gyro data (LSB/MSB pairs)
@@ -77,31 +96,39 @@ module drum_system_top_gyro_tb;
         mock_gyro_data[4] = 8'h10;  // Gyro Z LSB (positive for HIHAT)
         mock_gyro_data[5] = 8'h00;  // Gyro Z MSB
         mock_read_addr = 0;
+        mock_sb_data_o = 0;
+        mock_sb_ack_o = 0;
+        mock_ipdone = 0;
+        
+        // IP ready after 1us
+        #1000;
+        mock_ipdone = 1;
     end
     
     // Mock I2C IP System Bus behavior
-    // This drives the internal signals that the I2C controller sees
+    // Drive the System Bus data and ACK that the I2C IP block outputs
     always @(posedge clk_ext) begin
         if (!rst_n) begin
             mock_read_addr <= 0;
+            mock_sb_ack_o <= 0;
+            mock_sb_data_o <= 0;
         end else begin
             // Mock System Bus ACK and data
-            if (i2c1_sb_stb && !i2c1_sb_ack) begin
-                // Simulate ACK after one cycle
+            if (i2c1_sb_stb && !mock_sb_ack_o) begin
+                mock_sb_ack_o <= 1;
                 if (!i2c1_sb_wr) begin  // Read operation
-                    // Return mock gyro data via internal signal
-                    // Note: This is a hack - in real design, this comes from I2C IP
-                    mock_read_addr <= mock_read_addr + 1;
+                    // Return mock gyro data
+                    mock_sb_data_o <= mock_gyro_data[mock_read_addr];
+                    if (mock_read_addr < 5) begin
+                        mock_read_addr <= mock_read_addr + 1;
+                    end else begin
+                        mock_read_addr <= 0;  // Wrap around
+                    end
                 end
+            end else if (!i2c1_sb_stb) begin
+                mock_sb_ack_o <= 0;
             end
         end
-    end
-    
-    // Mock IPDONE signal
-    initial begin
-        #1000;
-        // IP ready after 1us
-        // Note: In real design, this comes from I2C IP block
     end
     
     // Test tasks
@@ -132,9 +159,6 @@ module drum_system_top_gyro_tb;
         rst_n = 0;
         button1 = 0;
         button2 = 0;
-        i2c1_sb_data_o = 0;
-        i2c1_sb_ack = 0;
-        i2c1_irq = 0;
         
         wait_cycles(10);
         rst_n = 1;
