@@ -18,7 +18,7 @@ module bno085_mock (
     output logic        int_n,         // Interrupt output (active low)
     
     // Test Data Injection
-    input  logic signed [15:0] test_quat_w, test_quat_x, test_quat_y, test_quat_z,
+    input  logic signed [16:0] test_quat_w, test_quat_x, test_quat_y, test_quat_z,  // Q16 needs 17 bits
     input  logic signed [15:0] test_gyro_x, test_gyro_y, test_gyro_z,
     input  logic        inject_data
 );

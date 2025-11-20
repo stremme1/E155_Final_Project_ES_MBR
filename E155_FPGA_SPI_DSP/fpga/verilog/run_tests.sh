@@ -16,7 +16,7 @@ fi
 
 # Compile all modules
 echo "Compiling SystemVerilog modules..."
-iverilog -g2012 -DSIMULATION \
+iverilog -g2012 -DSIMULATION -o drum_system_test \
     spi_controller.sv \
     bno085_spi_interface.sv \
     quaternion_to_euler_dsp.sv \
@@ -25,8 +25,7 @@ iverilog -g2012 -DSIMULATION \
     calibration_logic.sv \
     bno085_mock.sv \
     drum_system_top.sv \
-    drum_system_top_tb.sv \
-    -o drum_system_test
+    drum_system_top_tb.sv
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Compilation failed!"

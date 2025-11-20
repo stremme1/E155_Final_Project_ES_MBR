@@ -24,7 +24,7 @@ module calibration_logic (
 
     logic button2_prev;
     logic button2_debounced;
-    logic [15:0] button2_debounce_counter;
+    logic [23:0] button2_debounce_counter;
     
     // Button2 debouncing (50ms = 2400000 cycles at 48MHz)
     always_ff @(posedge clk or negedge rst_n) begin
@@ -41,7 +41,7 @@ module calibration_logic (
             // Debounce logic
             if (button2 != button2_prev) begin
                 button2_debounce_counter <= '0;
-            end else if (button2_debounce_counter < 16'd2400000) begin
+            end else if (button2_debounce_counter < 24'd2400000) begin
                 button2_debounce_counter <= button2_debounce_counter + 1;
             end else begin
                 button2_debounced <= button2;

@@ -36,9 +36,9 @@ module drum_system_top_tb;
     // Mock BNO085 Models
     logic bno085_1_int_enable;
     logic bno085_2_int_enable;
-    logic signed [15:0] mock_quat1_w, mock_quat1_x, mock_quat1_y, mock_quat1_z;
+    logic signed [16:0] mock_quat1_w, mock_quat1_x, mock_quat1_y, mock_quat1_z;  // Q16 needs 17 bits for 1.0
     logic signed [15:0] mock_gyro1_x, mock_gyro1_y, mock_gyro1_z;
-    logic signed [15:0] mock_quat2_w, mock_quat2_x, mock_quat2_y, mock_quat2_z;
+    logic signed [16:0] mock_quat2_w, mock_quat2_x, mock_quat2_y, mock_quat2_z;
     logic signed [15:0] mock_gyro2_x, mock_gyro2_y, mock_gyro2_z;
     
     // Instantiate DUT
@@ -170,7 +170,8 @@ module drum_system_top_tb;
             $display("✗ SOME TESTS FAILED - REVIEW REQUIRED");
         end
         
-        #1000;
+        #10000;
+        $display("\nTest bench completed.");
         $finish;
     end
     
@@ -228,7 +229,7 @@ module drum_system_top_tb;
         $display("\n--- TEST SUITE 3: Quaternion to Euler Conversion ---");
         
         // Test 3.1: Identity quaternion (no rotation)
-        mock_quat1_w = 16'd65536;  // 1.0 in Q16
+        mock_quat1_w = 17'd65536;  // 1.0 in Q16 (needs 17 bits)
         mock_quat1_x = 16'd0;
         mock_quat1_y = 16'd0;
         mock_quat1_z = 16'd0;
@@ -331,14 +332,14 @@ module drum_system_top_tb;
         $display("\n--- TEST SUITE 7: Edge Cases ---");
         
         // Test 7.1: Yaw at boundary (0 degrees)
-        mock_quat1_w = 16'd65536;
+        mock_quat1_w = 17'd65536;
         mock_quat1_x = 16'd0;
         mock_quat1_y = 16'd0;
         mock_quat1_z = 16'd0;
         wait_cycles(2500000);
         
         // Test 7.2: Yaw at boundary (360 degrees)
-        mock_quat1_w = 16'd65536;
+        mock_quat1_w = 17'd65536;
         mock_quat1_x = 16'd0;
         mock_quat1_y = 16'd0;
         mock_quat1_z = 16'd0;
