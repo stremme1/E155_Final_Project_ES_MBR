@@ -58,25 +58,16 @@ module drum_system_top (
     // Module name: i2c_block (from Module Generator)
     
     // I2C IP Block Instantiation
-    // CRITICAL: Port names must match the Module Generator file at E155_finalp/i2c_block/rtl/i2c_block.v
-    // 
-    // To find the correct port names:
-    // 1. Open E155_finalp/i2c_block/rtl/i2c_block.v
-    // 2. Check lines 10-25 for the module declaration
-    // 3. Find the I2C port names (they might be i2c1_scl_io, i2c2_scl_io, or different)
-    // 4. Update the port connections below to match exactly
-    //
-    // Common port name patterns:
-    // - If both I2Cs enabled: i2c2_scl_io, i2c2_sda_io, i2c1_scl_io, i2c1_sda_io
-    // - If only I2C Left: i2c2_scl_io, i2c2_sda_io (no i2c1_* ports)
-    // - If only I2C Right: i2c1_scl_io, i2c1_sda_io (no i2c2_* ports)
+    // Port names match the i2c_block.v file in this repository
+    // Module declaration (lines 10-25): i2c2_scl_io, i2c2_sda_io, i2c1_scl_io, i2c1_sda_io, 
+    //                                   rst_i, ipload_i, ipdone_o, sb_clk_i, sb_wr_i, sb_stb_i,
+    //                                   sb_adr_i, sb_dat_i, sb_dat_o, sb_ack_o, i2c_pirq_o, i2c_pwkup_o
     i2c_block i2c1_ip (
-        // I2C Physical Pins - UPDATE THESE TO MATCH YOUR MODULE GENERATOR FILE
-        // Check E155_finalp/i2c_block/rtl/i2c_block.v for actual port names
-        .i2c2_scl_io(1'bZ),              // TODO: Update if Module Generator uses different name
-        .i2c2_sda_io(1'bZ),              // TODO: Update if Module Generator uses different name
-        .i2c1_scl_io(i2c1_scl),          // TODO: Update if Module Generator uses different name
-        .i2c1_sda_io(i2c1_sda),          // TODO: Update if Module Generator uses different name
+        // I2C Physical Pins - exact port names from i2c_block.v
+        .i2c2_scl_io(1'bZ),              // I2C Left (unused) - port 0
+        .i2c2_sda_io(1'bZ),              // I2C Left (unused) - port 1
+        .i2c1_scl_io(i2c1_scl),          // I2C Right (USED) - port 2
+        .i2c1_sda_io(i2c1_sda),          // I2C Right (USED) - port 3
         
         // Reset and IP Configuration
         .rst_i(!rst_n),                  // Active-high reset
