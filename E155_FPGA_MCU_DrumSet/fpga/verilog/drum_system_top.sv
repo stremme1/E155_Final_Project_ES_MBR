@@ -58,16 +58,14 @@ module drum_system_top (
     // Module name: i2c_block (from Module Generator)
     
     // I2C IP Block Instantiation
-    // CRITICAL: The Module Generator file at E155_finalp/i2c_block/rtl/i2c_block.v
-    // has different port names. You MUST either:
-    // 1. Replace that file with our repository's i2c_block.v, OR
-    // 2. Check that file's port names and update this instantiation
-    //
-    // Our repository's i2c_block.v has these ports:
+    // CRITICAL: Use i2c_block.v from this repository (E155_FPGA_MCU_DrumSet/fpga/verilog/i2c_block.v)
+    // DO NOT use the Module Generator file from E155_finalp/i2c_block/rtl/i2c_block.v
+    // 
+    // Repository file has correct ports:
     // i2c2_scl_io, i2c2_sda_io, i2c1_scl_io, i2c1_sda_io, rst_i, ipload_i, ipdone_o,
     // sb_clk_i, sb_wr_i, sb_stb_i, sb_adr_i, sb_dat_i, sb_dat_o, sb_ack_o, i2c_pirq_o, i2c_pwkup_o
     //
-    // If your Module Generator file has different port names, update the connections below.
+    // See FIX_RADIANT_FILE_SELECTION.md for instructions to use repository file in Radiant
     i2c_block i2c1_ip (
         // I2C Physical Pins
         // NOTE: If error persists, check E155_finalp/i2c_block/rtl/i2c_block.v for actual port names
