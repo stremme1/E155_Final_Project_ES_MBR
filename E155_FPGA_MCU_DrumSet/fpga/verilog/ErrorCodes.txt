@@ -1,0 +1,21 @@
+Warning	35831026	Synthesis	WARNING <35831026> - No user LDC/SDC file specified in the project.	
+Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM9 is not connected on this instance. VDB-5050	
+Info	35901018	Synthesis	INFO <35901018> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/E155_finalp/i2c_block/rtl/i2c_block.v(11): compiling module i2c_block. VERI-1018 [i2c_block.v:11]	
+Critical	35831036	Synthesis	CRITICAL <35831036> - No top module name specified for top-level design. Results may be inaccurate. Please go to View->Show Views->Hierarchy or Project->Active Implementation->Set Top-Level Unit in order to set top module.	
+Warning	35001200	Synthesis	WARNING <35001200> - Setting drum_system_top as the top-level module. To specify the top-level module explicitly, go to View->Set Views->Hierarchy or Project->Active Implementation->Set Top-Level Unit.	
+Warning	35834005	Synthesis	WARNING <35834005> - IP Module i2c_block not found in top. Skipping Constraint Propagation...	
+Warning	35834002	Synthesis	WARNING <35834002> - An error occurred during IP constraint checking.	
+Critical	35001476	Synthesis	CRITICAL <35001476> - A top-level module has not been specified for the mixed language design.	
+Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(1): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_addsub.v. VERI-1328 [pmi_ice40up.v:1]	
+Info	35921014	Synthesis	INFO <35921014> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.vhd(4): analyzing package components. VHDL-1014 [pmi_ice40up.vhd:4]	
+Info	35921504	Synthesis	INFO <35921504> - The default VHDL library search path is now "C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/E155_finalp/impl_1". VHDL-1504	
+Warning	35901209	Synthesis	WARNING <35901209> - c:/users/estralka/desktop/e155_final_project_es_mbr-main/e155_fpga_mcu_drumset/fpga/verilog/drum_system_top.sv(108): expression size 32 truncated to fit in target size 16. VERI-1209 [drum_system_top.sv:108]	
+Critical	35002028	Synthesis	CRITICAL <35002028> - I/O port's net has no driver and is unused: clk_ext	
+Info	35001774	Synthesis	INFO <35001774> - Extracted state machine for register '\imu1_controller/state' with one-hot encoding	
+Critical	35001747	Synthesis	CRITICAL <35001747> - Bit(s) of register \imu1_controller/sb_master/state_FSM stuck at '0': 3	
+Warning	35935040	Synthesis	WARNING <35935040> - Register \gesture_rec/yaw1_norm_i7 clock is stuck at Zero. VDB-5040	
+Critical	35001752	Synthesis	CRITICAL <35001752> - mRegister \gesture_rec/yaw1_norm_i15 is stuck at Zero	
+Warning	71003020	Map	WARNING <71003020> - Top module port 'clk_ext' does not connect to anything.	
+Error	51001122	Map	ERROR <51001122> - Design doesn't fit into device specified, refer to the design summary section for more details.	
+Synthesis (24 criticals, 47 warnings, 55 info)	
+Map (1 errors, 6 warnings)	
