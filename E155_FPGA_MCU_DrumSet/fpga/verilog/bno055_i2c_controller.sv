@@ -1,6 +1,6 @@
-// BNO055 I2C Controller - EXTREME OPTIMIZATION FOR iCE40UP5K
-// Minimal state machine - only 5 states
-// Removed initialization (assume BNO055 pre-configured)
+// BNO055 I2C Controller - NO BUFFER VERSION (ASSEMBLE ON-THE-FLY)
+// Removed data buffer - assemble quaternion/gyro data directly as bytes arrive
+// Saves 112 flip-flops per controller = ~224 LUTs per controller
 // Author: E155 Final Project
 // Date: 2024
 
@@ -29,7 +29,7 @@ module bno055_i2c_controller (
     localparam I2C_CTRL_REG = 8'h00;
     localparam I2C_RX_REG = 8'h02;
     
-    // EXTREME: Only 5 states (removed initialization)
+    // EXTREME: Only 5 states
     typedef enum logic [2:0] {
         IDLE,
         READ_START,
@@ -65,9 +65,12 @@ module bno055_i2c_controller (
         .busy(sb_busy)
     );
     
-    // EXTREME: Minimal counters and storage
+    // RESOURCE OPTIMIZATION: No buffer - assemble data directly
+    // Store only the 16-bit values (8 registers instead of 14)
     logic [3:0] read_counter;
-    logic [7:0] data_buffer [0:13];
+    logic [7:0] byte_lsb, byte_msb;
+    logic [15:0] quat_w_reg, quat_x_reg, quat_y_reg, quat_z_reg;
+    logic signed [15:0] gyro_x_reg, gyro_y_reg, gyro_z_reg;
     
     // EXTREME: Single always_ff for everything
     always_ff @(posedge clk or negedge rst_n) begin
@@ -78,7 +81,15 @@ module bno055_i2c_controller (
             sb_write_en <= 0;
             sb_addr_in <= 0;
             data_valid <= 0;
-            for (int i = 0; i < 14; i++) data_buffer[i] <= 0;
+            quat_w_reg <= 0;
+            quat_x_reg <= 0;
+            quat_y_reg <= 0;
+            quat_z_reg <= 0;
+            gyro_x_reg <= 0;
+            gyro_y_reg <= 0;
+            gyro_z_reg <= 0;
+            byte_lsb <= 0;
+            byte_msb <= 0;
         end else begin
             sb_start <= 0;
             data_valid <= 0;
@@ -107,7 +118,24 @@ module bno055_i2c_controller (
                 READ_WAIT: begin
                     if (sb_done && !sb_busy) begin
                         if (read_counter < 14) begin
-                            data_buffer[read_counter] <= sb_data_out;
+                            // Assemble data on-the-fly based on byte position
+                            case (read_counter)
+                                4'd0: byte_lsb <= sb_data_out;  // quat_w LSB
+                                4'd1: quat_w_reg <= {sb_data_out, byte_lsb};  // quat_w MSB
+                                4'd2: byte_lsb <= sb_data_out;  // quat_x LSB
+                                4'd3: quat_x_reg <= {sb_data_out, byte_lsb};  // quat_x MSB
+                                4'd4: byte_lsb <= sb_data_out;  // quat_y LSB
+                                4'd5: quat_y_reg <= {sb_data_out, byte_lsb};  // quat_y MSB
+                                4'd6: byte_lsb <= sb_data_out;  // quat_z LSB
+                                4'd7: quat_z_reg <= {sb_data_out, byte_lsb};  // quat_z MSB
+                                4'd8: byte_lsb <= sb_data_out;  // gyro_x LSB
+                                4'd9: gyro_x_reg <= $signed({sb_data_out, byte_lsb});  // gyro_x MSB
+                                4'd10: byte_lsb <= sb_data_out;  // gyro_y LSB
+                                4'd11: gyro_y_reg <= $signed({sb_data_out, byte_lsb});  // gyro_y MSB
+                                4'd12: byte_lsb <= sb_data_out;  // gyro_z LSB
+                                4'd13: gyro_z_reg <= $signed({sb_data_out, byte_lsb});  // gyro_z MSB
+                            endcase
+                            
                             read_counter <= read_counter + 1;
                             state <= READ_DATA;
                         end else begin
@@ -123,15 +151,13 @@ module bno055_i2c_controller (
         end
     end
     
-    // Assemble outputs
-    always_comb begin
-        quat_w = {data_buffer[1], data_buffer[0]};
-        quat_x = {data_buffer[3], data_buffer[2]};
-        quat_y = {data_buffer[5], data_buffer[4]};
-        quat_z = {data_buffer[7], data_buffer[6]};
-        gyro_x = $signed({data_buffer[9], data_buffer[8]});
-        gyro_y = $signed({data_buffer[11], data_buffer[10]});
-        gyro_z = $signed({data_buffer[13], data_buffer[12]});
-    end
+    // Outputs directly from registers
+    assign quat_w = quat_w_reg;
+    assign quat_x = quat_x_reg;
+    assign quat_y = quat_y_reg;
+    assign quat_z = quat_z_reg;
+    assign gyro_x = gyro_x_reg;
+    assign gyro_y = gyro_y_reg;
+    assign gyro_z = gyro_z_reg;
 
 endmodule
