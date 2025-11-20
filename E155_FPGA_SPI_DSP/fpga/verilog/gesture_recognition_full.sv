@@ -44,8 +44,8 @@ module gesture_recognition_full (
     
     // Thresholds (matching C code)
     // Q8 format: -2500 in raw = -2500, but we need to compare properly
-    localparam signed [15:0] GYRO_THRESHOLD_Y = -16'd2500;
-    localparam signed [15:0] GYRO_THRESHOLD_Z = -16'd2000;
+    localparam signed [15:0] GYRO_THRESHOLD_Y = -16'sd2500;
+    localparam signed [15:0] GYRO_THRESHOLD_Z = -16'sd2000;
     localparam [15:0] PITCH_THRESHOLD_HIGH = 16'd12800;  // 50 degrees * 256 (Q8)
     localparam [15:0] PITCH_THRESHOLD_LOW = 16'd7680;    // 30 degrees * 256 (Q8)
     
@@ -53,13 +53,13 @@ module gesture_recognition_full (
     localparam [15:0] YAW_20 = 16'd5120;   // 20 * 256
     localparam [15:0] YAW_100 = 16'd25600; // 100 * 256
     localparam [15:0] YAW_120 = 16'd30720; // 120 * 256
-    localparam [16:0] YAW_200 = 17'd51200; // 200 * 256
-    localparam [16:0] YAW_300 = 17'd76800; // 300 * 256
-    localparam [16:0] YAW_305 = 17'd78080; // 305 * 256
-    localparam [16:0] YAW_325 = 17'd83200; // 325 * 256
-    localparam [16:0] YAW_340 = 17'd87040; // 340 * 256
-    localparam [16:0] YAW_350 = 17'd89600; // 350 * 256
-    localparam [16:0] YAW_360 = 17'd92160; // 360 * 256
+    localparam [15:0] YAW_200 = 16'd51200; // 200 * 256
+    localparam [15:0] YAW_300 = 16'd76800; // 300 * 256
+    localparam [15:0] YAW_305 = 16'd78080; // 305 * 256
+    localparam [15:0] YAW_325 = 16'd83200; // 325 * 256
+    localparam [15:0] YAW_340 = 16'd87040; // 340 * 256
+    localparam [15:0] YAW_350 = 16'd89600; // 350 * 256
+    localparam [15:0] YAW_360 = 16'd92160; // 360 * 256
     
     // Debounce flags (matching C code)
     logic printedForGyro1y, printedForGyro2y;
@@ -117,14 +117,14 @@ module gesture_recognition_full (
             sound_valid_comb = 1'b1;
         end
         // Right hand yaw ranges
-        else if ($unsigned(yaw1_normalized) >= YAW_20 && $unsigned(yaw1_normalized) <= YAW_120) begin
+        else if (yaw1_normalized >= YAW_20 && yaw1_normalized <= YAW_120) begin
             // Yaw 20-120: Snare drum
             if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
                 sound_id_comb = SOUND_SNARE;
                 sound_valid_comb = 1'b1;
             end
         end
-        else if (($unsigned(yaw1_normalized) >= YAW_340) || ($unsigned(yaw1_normalized) <= YAW_20)) begin
+        else if ((yaw1_normalized >= YAW_340) || (yaw1_normalized <= YAW_20)) begin
             // Yaw 340-360 or 0-20: High tom or Crash
             if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
                 if (pitch1 > PITCH_THRESHOLD_HIGH) begin
@@ -135,7 +135,7 @@ module gesture_recognition_full (
                 sound_valid_comb = 1'b1;
             end
         end
-        else if ($unsigned(yaw1_normalized) >= YAW_305 && $unsigned(yaw1_normalized) <= YAW_340) begin
+        else if (yaw1_normalized >= YAW_305 && yaw1_normalized <= YAW_340) begin
             // Yaw 305-340: Mid tom or Ride
             if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
                 if (pitch1 > PITCH_THRESHOLD_HIGH) begin
@@ -146,7 +146,7 @@ module gesture_recognition_full (
                 sound_valid_comb = 1'b1;
             end
         end
-        else if ($unsigned(yaw1_normalized) >= YAW_200 && $unsigned(yaw1_normalized) <= YAW_305) begin
+        else if (yaw1_normalized >= YAW_200 && yaw1_normalized <= YAW_305) begin
             // Yaw 200-305: Floor tom or Ride
             if (gyro1_y < GYRO_THRESHOLD_Y && !printedForGyro1y) begin
                 if (pitch1 > PITCH_THRESHOLD_LOW) begin
@@ -160,7 +160,7 @@ module gesture_recognition_full (
         
         // Left Hand Logic (IMU2) - matching C code exactly
         if (!sound_valid_comb) begin
-            if (($unsigned(yaw2_normalized) >= YAW_350) || ($unsigned(yaw2_normalized) <= YAW_100)) begin
+            if ((yaw2_normalized >= YAW_350) || (yaw2_normalized <= YAW_100)) begin
                 // Yaw 350-360 or 0-100: Snare or Hi-hat
                 if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
                     if (pitch2 > PITCH_THRESHOLD_LOW && gyro2_z > GYRO_THRESHOLD_Z) begin
@@ -171,7 +171,7 @@ module gesture_recognition_full (
                     sound_valid_comb = 1'b1;
                 end
             end
-            else if ($unsigned(yaw2_normalized) >= YAW_325 && $unsigned(yaw2_normalized) <= YAW_350) begin
+            else if (yaw2_normalized >= YAW_325 && yaw2_normalized <= YAW_350) begin
                 // Yaw 325-350: High tom or Crash
                 if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
                     if (pitch2 > PITCH_THRESHOLD_HIGH) begin
@@ -182,7 +182,7 @@ module gesture_recognition_full (
                     sound_valid_comb = 1'b1;
                 end
             end
-            else if ($unsigned(yaw2_normalized) >= YAW_300 && $unsigned(yaw2_normalized) <= YAW_325) begin
+            else if (yaw2_normalized >= YAW_300 && yaw2_normalized <= YAW_325) begin
                 // Yaw 300-325: Mid tom or Ride
                 if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
                     if (pitch2 > PITCH_THRESHOLD_HIGH) begin
@@ -193,7 +193,7 @@ module gesture_recognition_full (
                     sound_valid_comb = 1'b1;
                 end
             end
-            else if ($unsigned(yaw2_normalized) >= YAW_200 && $unsigned(yaw2_normalized) <= YAW_300) begin
+            else if (yaw2_normalized >= YAW_200 && yaw2_normalized <= YAW_300) begin
                 // Yaw 200-300: Floor tom or Ride
                 if (gyro2_y < GYRO_THRESHOLD_Y && !printedForGyro2y) begin
                     if (pitch2 > PITCH_THRESHOLD_LOW) begin
