@@ -7,7 +7,7 @@
 module bno055_i2c_controller_gyro_only (
     input  logic        clk,
     input  logic        rst_n,
-    input  logic        sb_clk,
+    // REMOVED: sb_clk (not used, we use clk directly)
     output logic        sb_wr,
     output logic        sb_stb,
     output logic [7:0]  sb_addr,
@@ -34,6 +34,9 @@ module bno055_i2c_controller_gyro_only (
     logic sb_start, sb_write_en;
     logic [7:0] sb_addr_in;
     logic sb_done, sb_busy;
+    
+    // FIX: Remove unused sb_clk input (we use clk directly)
+    // sb_clk is not used in inlined system bus master
     
     // INLINED System Bus Master
     always_ff @(posedge clk or negedge rst_n) begin
@@ -112,7 +115,7 @@ module bno055_i2c_controller_gyro_only (
                     if (!sb_busy) begin
                         sb_start <= 1;
                         sb_write_en <= 1;
-                        sb_addr_in <= I2C_CTRL_REG;
+                        sb_addr_in <= I2C_CTRL_REG;  // 8'h00
                         read_counter <= 0;
                         state <= WAIT_START_ACK;
                     end
@@ -126,7 +129,7 @@ module bno055_i2c_controller_gyro_only (
                     if (!sb_busy) begin
                         sb_start <= 1;
                         sb_write_en <= 0;
-                        sb_addr_in <= I2C_RX_REG;
+                        sb_addr_in <= I2C_RX_REG;  // 8'h02 - only bit 1 is set
                         state <= WAIT_DATA_ACK;
                     end
                 end
