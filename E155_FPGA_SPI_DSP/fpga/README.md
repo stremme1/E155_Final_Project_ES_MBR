@@ -23,25 +23,20 @@ This is a fresh implementation optimized for iCE40UP5K using:
 - **Gyro triggers** for hit detection
 - **Calibration** via button2 (sets yaw offsets)
 
-### Sound IDs (8 sounds)
-- 0 = Snare, 1 = Hi-hat, 2 = Kick, 3 = High tom
-- 4 = Mid tom, 5 = Crash, 6 = Ride, 7 = Floor tom
-- 255 = No sound
-
 ### DSP Blocks
 - **Hardware multipliers** - 8 DSP blocks available on UP5K
 - **Efficient math** - offloads computation from LUTs
 - **16-bit x 16-bit multiply** with 32-bit accumulator
-- **Perfect for** gyro data processing, filtering, gesture calculations
+- **Perfect for** quaternion multiplication, atan2/asin approximations
 
 ### BRAM
 - **120 kb EBR** available on UP5K
 - **Fast access** - single cycle read/write
 - **Useful for**:
-  - Gyro data buffering
-  - Filter coefficients storage
-  - Gesture pattern matching
-  - Sound ID lookup tables
+  - Quaternion data buffering
+  - Euler angle storage
+  - Gyro data history
+  - Filter coefficients
 
 ## Design Goals
 
