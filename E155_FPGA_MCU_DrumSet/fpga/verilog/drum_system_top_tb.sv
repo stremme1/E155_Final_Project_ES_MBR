@@ -64,7 +64,7 @@ module drum_system_top_tb();
     wire signed [15:0] roll1 = dut.roll1;
     wire imu1_data_valid = dut.imu1_data_valid;
     wire signed [15:0] yaw1_normalized = dut.yaw1_normalized;
-    wire signed [15:0] yaw_offset1 = dut.yaw_offset1;
+    // REMOVED: yaw_offset1 (calibration removed to save resources)
     
     // IMU 2 (Left Hand) internal signals
     wire [15:0] quat2_w = dut.quat2_w;
@@ -79,7 +79,7 @@ module drum_system_top_tb();
     wire signed [15:0] roll2 = dut.roll2;
     wire imu2_data_valid = dut.imu2_data_valid;
     wire signed [15:0] yaw2_normalized = dut.yaw2_normalized;
-    wire signed [15:0] yaw_offset2 = dut.yaw_offset2;
+    // REMOVED: yaw_offset2 (calibration removed to save resources)
     
     // Button debouncing signals
     wire button1_db = dut.button1_db;
@@ -408,15 +408,15 @@ module drum_system_top_tb();
                     (led1 == 0), 
                     "LED1 should be off when no sound");
         
-        // Test 2.2: Button 2 (Calibration)
+        // Test 2.2: Button 2 (Calibration REMOVED - LED2 always off)
         button2 = 1;
         wait_cycles(20000);  // Wait for debounce
-        check_result("Button2 Calibration LED", 
-                    (led2 == 1), 
-                    "LED2 should indicate calibration mode");
+        check_result("Button2 - LED2 Always Off (Calibration Removed)", 
+                    (led2 == 0), 
+                    "LED2 is always 0 since calibration was removed to save resources");
         button2 = 0;
         wait_cycles(20000);
-        check_result("Button2 Release - LED2 Off", 
+        check_result("Button2 Release - LED2 Still Off", 
                     (led2 == 0), 
                     "LED2 should be off after release");
         
@@ -516,13 +516,7 @@ module drum_system_top_tb();
                     ($signed(yaw2_normalized) >= -32768 && $signed(yaw2_normalized) <= 32767), 
                     "Normalized yaw should be signed 16-bit");
         
-        // Test 4.6: Calibration offsets
-        check_result("IMU1 Yaw Offset Signal", 
-                    ($signed(yaw_offset1) >= -32768 && $signed(yaw_offset1) <= 32767), 
-                    "Yaw offset should be signed 16-bit");
-        check_result("IMU2 Yaw Offset Signal", 
-                    ($signed(yaw_offset2) >= -32768 && $signed(yaw_offset2) <= 32767), 
-                    "Yaw offset should be signed 16-bit");
+        // REMOVED: Test 4.6 - Calibration offsets (removed to save resources)
         
         // Test 4.7: Button debouncing signals
         check_result("Button1 Debounced Signal", 
