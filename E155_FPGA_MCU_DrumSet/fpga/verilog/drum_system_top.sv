@@ -58,15 +58,23 @@ module drum_system_top (
     // Module name: i2c_block (from Module Generator)
     
     // I2C IP Block Instantiation
-    // CRITICAL: Ensure i2c_block.v from this repository is added to Radiant project
-    // If Module Generator file has different ports, copy our i2c_block.v to replace it
-    // Port mapping: I2C Left = i2c2, I2C Right = i2c1 (confusing but that's how it is)
+    // CRITICAL: The Module Generator file at E155_finalp/i2c_block/rtl/i2c_block.v
+    // has different port names. You MUST either:
+    // 1. Replace that file with our repository's i2c_block.v, OR
+    // 2. Check that file's port names and update this instantiation
+    //
+    // Our repository's i2c_block.v has these ports:
+    // i2c2_scl_io, i2c2_sda_io, i2c1_scl_io, i2c1_sda_io, rst_i, ipload_i, ipdone_o,
+    // sb_clk_i, sb_wr_i, sb_stb_i, sb_adr_i, sb_dat_i, sb_dat_o, sb_ack_o, i2c_pirq_o, i2c_pwkup_o
+    //
+    // If your Module Generator file has different port names, update the connections below.
     i2c_block i2c1_ip (
-        // I2C Physical Pins - try both naming conventions
-        .i2c2_scl_io(1'bZ),              // I2C Left (unused)
-        .i2c2_sda_io(1'bZ),              // I2C Left (unused)
-        .i2c1_scl_io(i2c1_scl),          // I2C Right (USED - this is I2C1)
-        .i2c1_sda_io(i2c1_sda),          // I2C Right (USED - this is I2C1)
+        // I2C Physical Pins
+        // NOTE: If error persists, check E155_finalp/i2c_block/rtl/i2c_block.v for actual port names
+        .i2c2_scl_io(1'bZ),              // I2C Left (unused) - may not exist if only I2C Right enabled
+        .i2c2_sda_io(1'bZ),              // I2C Left (unused) - may not exist if only I2C Right enabled
+        .i2c1_scl_io(i2c1_scl),          // I2C Right (USED) - this is I2C1
+        .i2c1_sda_io(i2c1_sda),          // I2C Right (USED) - this is I2C1
         
         // Reset and IP Configuration
         .rst_i(!rst_n),                  // Active-high reset
