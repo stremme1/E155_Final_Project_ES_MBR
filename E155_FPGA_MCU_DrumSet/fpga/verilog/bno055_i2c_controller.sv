@@ -84,10 +84,8 @@ module bno055_i2c_controller (
     logic [15:0] delay_counter;
     logic init_complete;
     
-    // Data storage - ULTRA-OPTIMIZED: Individual registers instead of array
-    // This avoids expensive variable-indexed array access (multiplexers)
-    logic [7:0] data_0, data_1, data_2, data_3, data_4, data_5, data_6, data_7;
-    logic [7:0] data_8, data_9, data_10, data_11, data_12, data_13;
+    // Data storage (simplified - store as read)
+    logic [7:0] data_buffer [0:13];  // Store 14 bytes
     
     // State machine
     always_ff @(posedge clk or negedge rst_n) begin
@@ -97,11 +95,7 @@ module bno055_i2c_controller (
             delay_counter <= 0;
             init_complete <= 0;
             data_valid <= 0;
-            // Explicit reset (no for loop - saves LUTs)
-            data_0 <= 0; data_1 <= 0; data_2 <= 0; data_3 <= 0;
-            data_4 <= 0; data_5 <= 0; data_6 <= 0; data_7 <= 0;
-            data_8 <= 0; data_9 <= 0; data_10 <= 0; data_11 <= 0;
-            data_12 <= 0; data_13 <= 0;
+            for (int i = 0; i < 14; i++) data_buffer[i] <= 0;
         end else begin
             state <= next_state;
             data_valid <= 0;
@@ -111,25 +105,11 @@ module bno055_i2c_controller (
                 delay_counter <= delay_counter - 1;
             end
             
-            // Store read data - ULTRA-OPTIMIZED: Direct assignment instead of array indexing
-            // This avoids expensive multiplexers for variable indexing
+            // Store read data
             if (sb_done && !sb_busy && !sb_write_en && state == READ_WAIT) begin
-                case (read_counter)
-                    4'd0: data_0 <= sb_data_out;
-                    4'd1: data_1 <= sb_data_out;
-                    4'd2: data_2 <= sb_data_out;
-                    4'd3: data_3 <= sb_data_out;
-                    4'd4: data_4 <= sb_data_out;
-                    4'd5: data_5 <= sb_data_out;
-                    4'd6: data_6 <= sb_data_out;
-                    4'd7: data_7 <= sb_data_out;
-                    4'd8: data_8 <= sb_data_out;
-                    4'd9: data_9 <= sb_data_out;
-                    4'd10: data_10 <= sb_data_out;
-                    4'd11: data_11 <= sb_data_out;
-                    4'd12: data_12 <= sb_data_out;
-                    4'd13: data_13 <= sb_data_out;
-                endcase
+                if (read_counter < 14) begin
+                    data_buffer[read_counter] <= sb_data_out;
+                end
             end
             
             // Mark data ready
@@ -245,15 +225,15 @@ module bno055_i2c_controller (
         end
     end
     
-    // Assemble outputs from registers (ultra-optimized - no array indexing)
+    // Assemble outputs from buffer (simplified)
     always_comb begin
-        quat_w = {data_1, data_0};   // MSB, LSB
-        quat_x = {data_3, data_2};
-        quat_y = {data_5, data_4};
-        quat_z = {data_7, data_6};
-        gyro_x = $signed({data_9, data_8});
-        gyro_y = $signed({data_11, data_10});
-        gyro_z = $signed({data_13, data_12});
+        quat_w = {data_buffer[1], data_buffer[0]};   // MSB, LSB
+        quat_x = {data_buffer[3], data_buffer[2]};
+        quat_y = {data_buffer[5], data_buffer[4]};
+        quat_z = {data_buffer[7], data_buffer[6]};
+        gyro_x = $signed({data_buffer[9], data_buffer[8]});
+        gyro_y = $signed({data_buffer[11], data_buffer[10]});
+        gyro_z = $signed({data_buffer[13], data_buffer[12]});
     end
 
 endmodule
