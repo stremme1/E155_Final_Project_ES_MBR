@@ -26,8 +26,8 @@ module bno055_i2c_controller_gyro_only (
     
     // INLINED: System Bus Master (2-state FSM)
     typedef enum logic {
-        IDLE = 1'b0,
-        WAIT_ACK = 1'b1
+        SB_IDLE = 1'b0,
+        SB_WAIT_ACK = 1'b1
     } sb_state_t;
     
     sb_state_t sb_state;
@@ -38,7 +38,7 @@ module bno055_i2c_controller_gyro_only (
     // INLINED System Bus Master
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            sb_state <= IDLE;
+            sb_state <= SB_IDLE;
             sb_wr <= 0;
             sb_stb <= 0;
             sb_addr <= 0;
@@ -48,11 +48,11 @@ module bno055_i2c_controller_gyro_only (
         end else begin
             sb_done <= 0;
             case (sb_state)
-                IDLE: begin
+                SB_IDLE: begin
                     sb_stb <= 0;
                     sb_busy <= 0;
                     if (sb_start) begin
-                        sb_state <= WAIT_ACK;
+                        sb_state <= SB_WAIT_ACK;
                         sb_busy <= 1;
                         sb_addr <= sb_addr_in;
                         sb_wr <= sb_write_en;
@@ -60,13 +60,13 @@ module bno055_i2c_controller_gyro_only (
                         sb_stb <= 1;
                     end
                 end
-                WAIT_ACK: begin
+                SB_WAIT_ACK: begin
                     sb_stb <= 1;
                     if (sb_ack) begin
                         sb_stb <= 0;
                         sb_done <= 1;
                         sb_busy <= 0;
-                        sb_state <= IDLE;
+                        sb_state <= SB_IDLE;
                     end
                 end
             endcase
@@ -74,10 +74,12 @@ module bno055_i2c_controller_gyro_only (
     end
     
     // I2C Controller - GYRO ONLY (3 bytes: X, Y, Z)
-    typedef enum logic [1:0] {
+    typedef enum logic [2:0] {
         IDLE_CTRL,
         READ_START,
+        WAIT_START_ACK,
         READ_DATA,
+        WAIT_DATA_ACK,
         DATA_READY
     } state_t;
     
@@ -112,6 +114,11 @@ module bno055_i2c_controller_gyro_only (
                         sb_write_en <= 1;
                         sb_addr_in <= I2C_CTRL_REG;
                         read_counter <= 0;
+                        state <= WAIT_START_ACK;
+                    end
+                end
+                WAIT_START_ACK: begin
+                    if (sb_done && !sb_busy) begin
                         state <= READ_DATA;
                     end
                 end
@@ -120,31 +127,31 @@ module bno055_i2c_controller_gyro_only (
                         sb_start <= 1;
                         sb_write_en <= 0;
                         sb_addr_in <= I2C_RX_REG;
-                        state <= WAIT_ACK;
+                        state <= WAIT_DATA_ACK;
                     end
                 end
-                WAIT_ACK: begin
+                WAIT_DATA_ACK: begin
                     if (sb_done && !sb_busy) begin
                         if (read_counter < 3) begin
                             case (read_counter)
                                 2'd0: begin
-                                    byte_lsb <= sb_data_out;
+                                    byte_lsb <= sb_data_o;
                                     read_counter <= 1;
                                 end
                                 2'd1: begin
-                                    gyro_x_reg <= $signed({sb_data_out, byte_lsb});
-                                    byte_lsb <= sb_data_out;
+                                    gyro_x_reg <= $signed({sb_data_o, byte_lsb});
+                                    byte_lsb <= sb_data_o;
                                     read_counter <= 2;
                                 end
                                 2'd2: begin
-                                    gyro_y_reg <= $signed({sb_data_out, byte_lsb});
-                                    byte_lsb <= sb_data_out;
+                                    gyro_y_reg <= $signed({sb_data_o, byte_lsb});
+                                    byte_lsb <= sb_data_o;
                                     read_counter <= 3;
                                 end
                             endcase
                             state <= READ_DATA;
                         end else begin
-                            gyro_z_reg <= $signed({sb_data_out, byte_lsb});
+                            gyro_z_reg <= $signed({sb_data_o, byte_lsb});
                             state <= DATA_READY;
                         end
                     end
@@ -162,4 +169,3 @@ module bno055_i2c_controller_gyro_only (
     assign gyro_z = gyro_z_reg;
 
 endmodule
-
