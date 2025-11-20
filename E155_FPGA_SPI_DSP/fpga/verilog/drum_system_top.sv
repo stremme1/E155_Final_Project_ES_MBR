@@ -1,6 +1,7 @@
-// Top-level Drum System Module - I²C + DSP + BRAM VERSION
-// Full implementation with two IMUs and complete gesture recognition
-// Uses I²C (BNO055 doesn't support SPI), DSP blocks, and BRAM
+// Top-level Drum System Module - SPI + DSP + BRAM VERSION
+// Full implementation with two BNO085 IMUs via SPI
+// Uses soft SPI controller (avoids massive I2C IP blocks)
+// DSP blocks for quaternion math, BRAM for buffering
 // Optimized for iCE40UP5K (5280 LUTs)
 // Author: E155 Final Project
 // Date: 2024
@@ -9,13 +10,12 @@ module drum_system_top (
     input  logic        clk_ext,
     input  logic        rst_n,
     
-    // I²C Physical Pins - IMU1 (Right Hand, address 0x28)
-    inout  wire         i2c1_scl,      // I²C1 Clock
-    inout  wire         i2c1_sda,      // I²C1 Data
-    
-    // I²C Physical Pins - IMU2 (Left Hand, address 0x29)
-    inout  wire         i2c2_scl,      // I²C2 Clock
-    inout  wire         i2c2_sda,      // I²C2 Data
+    // SPI Physical Pins (shared bus, two CS lines for two IMUs)
+    output logic        spi_sclk,      // SPI Clock (shared)
+    output logic        spi_mosi,      // SPI Master Out Slave In (shared)
+    input  logic        spi_miso,       // SPI Master In Slave Out (shared)
+    output logic        spi_cs1_n,     // SPI Chip Select 1 (Right hand IMU)
+    output logic        spi_cs2_n,     // SPI Chip Select 2 (Left hand IMU)
     
     // User Interface
     input  logic        button1,        // Kick drum button
@@ -38,8 +38,8 @@ module drum_system_top (
     (* keep *) wire _unused_clk_ext = clk_ext;
 `endif
 
-    // TODO: Instantiate I²C controllers (2x - one per IMU)
-    // TODO: Instantiate BNO055 I²C interfaces (quaternion + gyro)
+    // TODO: Instantiate SPI controller (soft, shared for both IMUs)
+    // TODO: Instantiate BNO085 SPI interfaces (quaternion + gyro, 2x)
     // TODO: Instantiate quaternion-to-Euler conversion (DSP)
     // TODO: Instantiate BRAM buffers
     // TODO: Instantiate full gesture recognition logic
