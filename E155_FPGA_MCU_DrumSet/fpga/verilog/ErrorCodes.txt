@@ -1,9 +1,6 @@
-Info	2043018	Project	INFO <2043018> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/fpga/verilog/drum_system_top.sv(7,8-7,23) (VERI-1018) compiling module 'drum_system_top' [drum_system_top.sv:7]	
-Error	2043010	Project	ERROR <2043010> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/fpga/verilog/drum_system_top.sv(63,9-63,31) (VERI-1010) cannot find port 'i2c1_sda_io' on this module [drum_system_top.sv:63]	
-Info	2043310	Project	INFO <2043310> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/E155_finalp/i2c_block/rtl/i2c_block.v(11,69-11,78) (VERI-1310) 'i2c_block' is declared here [i2c_block.v:11]	
 Critical	35001476	Synthesis	CRITICAL <35001476> - A top-level module has not been specified for the mixed language design.	
 Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM9 is not connected on this instance. VDB-5050	
 Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(1): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_addsub.v. VERI-1328 [pmi_ice40up.v:1]	
 Info	35921014	Synthesis	INFO <35921014> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.vhd(4): analyzing package components. VHDL-1014 [pmi_ice40up.vhd:4]	
-Error	35901010	Synthesis	ERROR <35901010> - c:/users/estralka/desktop/e155_final_project_es_mbr-main/e155_fpga_mcu_drumset/fpga/verilog/drum_system_top.sv(63): cannot find port i2c1_sda_io on this module. VERI-1010 [drum_system_top.sv:63]	
+Error	35901010	Synthesis	ERROR <35901010> - c:/users/estralka/desktop/e155_final_project_es_mbr-main/e155_fpga_mcu_drumset/fpga/verilog/drum_system_top.sv(66): cannot find port i2c1_sda_io on this module. VERI-1010 [drum_system_top.sv:66]	
 Synthesis (1 errors, 1 criticals, 11 warnings, 34 info)	
