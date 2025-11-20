@@ -278,17 +278,17 @@ module drum_system_top (
     );
     
     // Demultiplex outputs (with pipeline delay compensation)
-    // quaternion_to_euler has 4 pipeline stages (reduced from 5), so delay mux_sel by 4 cycles
-    logic [3:0] mux_sel_pipeline;
+    // quaternion_to_euler has 2 pipeline stages, so delay mux_sel by 2 cycles
+    logic [1:0] mux_sel_pipeline;
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            mux_sel_pipeline <= 4'b0;
+            mux_sel_pipeline <= 2'b0;
         end else begin
-            mux_sel_pipeline <= {mux_sel_pipeline[2:0], mux_sel};
+            mux_sel_pipeline <= {mux_sel_pipeline[0], mux_sel};
         end
     end
     logic mux_sel_delayed;
-    assign mux_sel_delayed = mux_sel_pipeline[3];
+    assign mux_sel_delayed = mux_sel_pipeline[1];
     
     // Store results for both IMUs
     always_ff @(posedge clk or negedge rst_n) begin
