@@ -15,7 +15,7 @@ module bno055_i2c_controller_gyro_only (
     input  logic [7:0]  sb_data_o,
     input  logic        sb_ack,
     input  logic        sb_irq,
-    output logic signed [15:0] gyro_x,
+    output logic signed [15:0] gyro_x,  // Not used in gesture recognition, but kept for compatibility
     output logic signed [15:0] gyro_y,
     output logic signed [15:0] gyro_z,
     output logic        data_valid
