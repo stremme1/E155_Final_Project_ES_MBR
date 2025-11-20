@@ -71,21 +71,18 @@ module gesture_recognition_full (
     logic sound_valid_comb;
     
     // Pipeline registers for data_valid synchronization
+    // Note: data_valid signals are already synchronized from upstream modules
+    // We use them directly but ensure they're stable
     logic data1_valid_sync, data2_valid_sync;
-    logic data1_valid_pipe, data2_valid_pipe;
     
-    // Synchronize data_valid signals
+    // Simple synchronization (1 cycle delay for stability)
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             data1_valid_sync <= 1'b0;
             data2_valid_sync <= 1'b0;
-            data1_valid_pipe <= 1'b0;
-            data2_valid_pipe <= 1'b0;
         end else begin
-            data1_valid_pipe <= data1_valid;
-            data2_valid_pipe <= data2_valid;
-            data1_valid_sync <= data1_valid_pipe;
-            data2_valid_sync <= data2_valid_pipe;
+            data1_valid_sync <= data1_valid;
+            data2_valid_sync <= data2_valid;
         end
     end
     

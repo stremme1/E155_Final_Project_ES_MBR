@@ -95,10 +95,11 @@ module gesture_recognition_unit_tb;
         yaw1_normalized = 16'd12800;  // 50 degrees
         pitch1 = 0;
         gyro1_y = -16'd3000;  // Below threshold
+        // Set data_valid and keep it high for synchronization pipeline
         data1_valid = 1;
-        @(posedge clk);
+        repeat(10) @(posedge clk);  // Wait for sync pipeline (2 cycles + margin)
         data1_valid = 0;
-        repeat(5) @(posedge clk);
+        repeat(10) @(posedge clk);  // Wait for output
         check_sound("Right hand snare (yaw=50)", 8'h00);
     endtask
     
