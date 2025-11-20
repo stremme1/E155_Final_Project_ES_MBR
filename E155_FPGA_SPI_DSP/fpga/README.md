@@ -1,20 +1,32 @@
-# FPGA Drum System - SPI + DSP + BRAM Implementation
+# FPGA Drum System - I²C + DSP + BRAM Implementation
 
 ## Architecture Overview
 
 This is a fresh implementation optimized for iCE40UP5K using:
-- **SPI** for gyroscope communication (instead of I2C)
-- **DSP blocks** for math operations (multiply, accumulate)
+- **I²C** for BNO055 communication (BNO055 doesn't support SPI - see BNO055_SPI_NOTE.md)
+- **DSP blocks** for quaternion-to-Euler math operations
 - **BRAM** for data buffering and storage
-- **Ultra-minimal** design to fit within 5280 LUTs
+- **Two IMUs** - Full gesture recognition matching original C/Python code
+- **End-to-end** project with complete functionality
 
-## Key Advantages
+## Key Features
 
-### SPI vs I2C
-- **Faster data transfer** (up to 10+ MHz vs 400 kHz I2C)
-- **Simpler protocol** - easier to implement in FPGA
-- **Less resource usage** - no need for hardened I2C IP blocks
-- **More flexible** - can use soft SPI controller
+### Two BNO055 IMUs
+- **I²C1**: Right hand IMU (address 0x28)
+- **I²C2**: Left hand IMU (address 0x29)
+- **Full data**: Quaternion (w,x,y,z), Gyroscope (x,y,z), Euler (yaw, pitch, roll)
+
+### Complete Gesture Recognition
+- **Quaternion → Euler conversion** using DSP blocks
+- **Yaw-based drum position** detection (matching original code)
+- **Pitch thresholds** for cymbal vs tom distinction
+- **Gyro triggers** for hit detection
+- **Calibration** via button2 (sets yaw offsets)
+
+### Sound IDs (8 sounds)
+- 0 = Snare, 1 = Hi-hat, 2 = Kick, 3 = High tom
+- 4 = Mid tom, 5 = Crash, 6 = Ride, 7 = Floor tom
+- 255 = No sound
 
 ### DSP Blocks
 - **Hardware multipliers** - 8 DSP blocks available on UP5K
@@ -34,10 +46,11 @@ This is a fresh implementation optimized for iCE40UP5K using:
 ## Design Goals
 
 1. **Fit within 5280 LUTs** (iCE40UP5K limit)
-2. **Use SPI** for BNO055 gyroscope communication
-3. **Leverage DSP blocks** for all multiplications
-4. **Use BRAM** for data storage and buffering
-5. **Minimal state machines** - keep logic simple
+2. **Use I²C** for BNO055 communication (both I²C controllers on UP5K)
+3. **Leverage DSP blocks** for quaternion math (multiply, accumulate)
+4. **Use BRAM** for quaternion/Euler data buffering
+5. **Full gesture recognition** matching original C/Python code
+6. **Two IMUs** with complete functionality
 
 ## File Structure
 
@@ -46,42 +59,56 @@ E155_FPGA_SPI_DSP/
 ├── fpga/
 │   ├── README.md (this file)
 │   ├── verilog/
-│   │   ├── drum_system_top.sv          # Top-level module
-│   │   ├── spi_controller.sv            # SPI master controller
-│   │   ├── bno055_spi_gyro.sv           # BNO055 SPI interface (gyro only)
-│   │   ├── gesture_recognition_dsp.sv   # Gesture recognition using DSP
-│   │   └── bram_buffer.sv               # BRAM data buffer
+│   │   ├── drum_system_top.sv              # Top-level module
+│   │   ├── bno055_i2c_controller.sv         # BNO055 I²C controller (quaternion + gyro)
+│   │   ├── quaternion_to_euler_dsp.sv       # Quaternion→Euler using DSP
+│   │   ├── gesture_recognition_full.sv      # Full gesture recognition logic
+│   │   ├── bram_quaternion_buffer.sv        # BRAM buffer for quaternion data
+│   │   └── yaw_normalize.sv                 # Yaw normalization (0-360)
 │   └── docs/
-│       ├── SPI_SETUP.md                 # SPI configuration guide
-│       ├── DSP_USAGE.md                 # DSP block usage guide
-│       └── BRAM_USAGE.md                # BRAM usage guide
+│       ├── BNO055_SPI_NOTE.md               # Why we use I²C (not SPI)
+│       ├── DSP_USAGE.md                      # DSP block usage guide
+│       ├── BRAM_USAGE.md                     # BRAM usage guide
+│       └── GESTURE_LOGIC.md                  # Gesture recognition algorithm
 ```
 
 ## Resource Allocation Plan
 
 ### LUTs (Target: <5000)
-- SPI Controller: ~300-500 LUTs
-- BNO055 Interface: ~200-300 LUTs
-- Gesture Recognition: ~300-400 LUTs
+- I²C Controllers (2x): ~800-1000 LUTs (using hardened IP)
+- BNO055 Interface (2x): ~400-600 LUTs
+- Quaternion→Euler (DSP): ~200-300 LUTs (control logic)
+- Gesture Recognition: ~500-700 LUTs
+- BRAM control: ~100-200 LUTs
 - Top-level logic: ~200-300 LUTs
-- **Total: ~1000-1500 LUTs** (plenty of margin!)
+- **Total: ~2200-3100 LUTs** (well under 5280 limit!)
 
 ### DSP Blocks (8 available)
-- Gyro data filtering: 1-2 DSP blocks
-- Gesture calculations: 1-2 DSP blocks
-- **Total: 2-4 DSP blocks** (well within limit)
+- Quaternion multiply (w*x, y*z, etc.): 2-3 DSP blocks
+- atan2 approximation: 1-2 DSP blocks
+- asin approximation: 1 DSP block
+- **Total: 4-6 DSP blocks** (well within limit)
 
 ### BRAM (120 kb available)
-- Gyro data buffer: ~2-4 kb (256-512 samples)
-- Filter coefficients: ~1 kb
-- Gesture thresholds: ~1 kb
-- **Total: ~4-6 kb** (plenty of space!)
+- Quaternion buffer (2 IMUs): ~4-8 kb (128-256 samples each)
+- Euler angle buffer: ~2-4 kb
+- Gyro data buffer: ~2-4 kb
+- **Total: ~8-16 kb** (plenty of space!)
 
-## Next Steps
+## Implementation Status
 
-1. Create SPI controller module
-2. Create BNO055 SPI interface
-3. Create gesture recognition with DSP
-4. Create BRAM buffer module
-5. Integrate everything in top-level module
+1. ✅ Architecture defined
+2. ⏳ BNO055 I²C controller (quaternion + gyro)
+3. ⏳ Quaternion-to-Euler conversion (DSP)
+4. ⏳ Full gesture recognition logic
+5. ⏳ BRAM buffer implementation
+6. ⏳ Calibration logic
+7. ⏳ Test bench
+
+## References
+
+- [iCE40UP5K Datasheet](https://www.farnell.com/datasheets/3215488.pdf)
+- [BNO055 Datasheet](https://cdn-learn.adafruit.com/downloads/pdf/adafruit-bno055-absolute-orientation-sensor.pdf)
+- Original C code: `src/main.c`
+- Original Python code: `PYTHON/collect_data.py`
 
