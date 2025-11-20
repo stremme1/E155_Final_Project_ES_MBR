@@ -1,9 +1,21 @@
 module top(
-    input  logic clk,      // Your system clock
     input  logic rst_n,    // Active-low reset
     inout  wire  i2c_sda,  // IMU SDA pin
     inout  wire  i2c_scl   // IMU SCL pin
 );
+
+    //----------------------------------------------------------------------
+    // 1. Internal 24 MHz system clock using HSOSC  (*** ADDED ***)
+    //----------------------------------------------------------------------
+    logic clk_sys;
+
+    HSOSC #(.CLKHF_DIV(2'b01))   // 24 MHz clock
+    hf_osc (
+        .CLKHFPU(1'b1),
+        .CLKHFEN(1'b1),
+        .CLKHF(clk_sys)
+    );
+
 
     //----------------------------------------------------------------------
     // System Bus signals connecting YOUR driver FSM <-> HARD I2C block
@@ -16,31 +28,31 @@ module top(
     logic        sbacko;       // acknowledge pulse
 
     //----------------------------------------------------------------------
-    // Instantiate the Radiant-generated LEFT I²C block
+    // Instantiate the Radiant-generated LEFT IÃ‚Â²C block
     //----------------------------------------------------------------------
     i2cconnection i2c_inst (
     .i2c2_scl_io(i2c_scl),   // FPGA pin
     .i2c2_sda_io(i2c_sda),   // FPGA pin
-    .rst_i(rst),
+    .rst_i(rst_n),
     .ipload_i(1'b1),         // REQUIRED to load registers on startup
     .ipdone_o(ipdone),
-    .sb_clk_i(clk),
-    .sb_wr_i(sb_wr),
-    .sb_stb_i(sb_stb),
-    .sb_adr_i(sb_addr),
-    .sb_dat_i(sb_wdata),
-    .sb_dat_o(sb_rdata),
-    .sb_ack_o(sb_ack),
+    .sb_clk_i(clk_sys),
+    .sb_wr_i(sbrwi),
+    .sb_stb_i(sbstbi),
+    .sb_adr_i(sbadri),
+    .sb_dat_i(sbdati),
+    .sb_dat_o(sbdato),
+    .sb_ack_o(sbacko),
     .i2c_pirq_o(),
     .i2c_pwkup_o()
 	);
 
 
     //----------------------------------------------------------------------
-    // Instantiate your I²C driver FSM (that YOU write)
+    // Instantiate your IÃ‚Â²C driver FSM (that YOU write)
     //----------------------------------------------------------------------
-    i2c_driver_bno085 i2c_driver_bno085 (
-        .clk(clk),
+    i2c_driver_bno085 i2c_driver (
+        .clk(clk_sys),
         .rst_n(rst_n),
 
         // connect driver to system bus
