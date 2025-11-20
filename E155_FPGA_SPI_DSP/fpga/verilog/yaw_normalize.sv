@@ -20,7 +20,7 @@ module yaw_normalize (
 
     // Fixed-point: Q8 format (1.0 degree = 256)
     // 360 degrees = 92160 (360 * 256)
-    localparam [15:0] YAW_360 = 16'd92160;
+    localparam YAW_360 = 16'd92160;
     
     logic signed [16:0] yaw_adjusted;  // 17-bit for subtraction
     logic signed [15:0] yaw_normalized;

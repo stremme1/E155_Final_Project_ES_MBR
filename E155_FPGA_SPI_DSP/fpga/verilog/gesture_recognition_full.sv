@@ -44,8 +44,8 @@ module gesture_recognition_full (
     
     // Thresholds (matching C code)
     // Q8 format: -2500 in raw = -2500, but we need to compare properly
-    localparam signed [15:0] GYRO_THRESHOLD_Y = -16'sd2500;
-    localparam signed [15:0] GYRO_THRESHOLD_Z = -16'sd2000;
+    localparam signed [15:0] GYRO_THRESHOLD_Y = -16'd2500;
+    localparam signed [15:0] GYRO_THRESHOLD_Z = -16'd2000;
     localparam [15:0] PITCH_THRESHOLD_HIGH = 16'd12800;  // 50 degrees * 256 (Q8)
     localparam [15:0] PITCH_THRESHOLD_LOW = 16'd7680;    // 30 degrees * 256 (Q8)
     
@@ -64,7 +64,7 @@ module gesture_recognition_full (
     // Debounce flags (matching C code)
     logic printedForGyro1y, printedForGyro2y;
     logic button1_prev, button1_debounced;
-    logic [23:0] button1_debounce_counter;
+    logic [15:0] button1_debounce_counter;
     
     // Sound detection logic
     logic [7:0] sound_id_comb;
@@ -84,7 +84,7 @@ module gesture_recognition_full (
             // Button1 debouncing (50ms = 2400000 cycles at 48MHz)
             if (button1 != button1_prev) begin
                 button1_debounce_counter <= '0;
-            end else if (button1_debounce_counter < 24'd2400000) begin
+            end else if (button1_debounce_counter < 16'd2400000) begin
                 button1_debounce_counter <= button1_debounce_counter + 1;
             end else begin
                 button1_debounced <= button1;

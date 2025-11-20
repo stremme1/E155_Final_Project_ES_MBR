@@ -87,14 +87,14 @@ module drum_system_top (
     assign imu2_busy = spi_busy & imu2_start;
     
     // CS lines (simple time-multiplexing)
-    logic [19:0] cs_counter;
+    logic [15:0] cs_counter;
     logic cs_select;  // 0 = IMU1, 1 = IMU2
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             cs_counter <= '0;
             cs_select <= 1'b0;
         end else begin
-            if (cs_counter >= 20'd480000) begin  // ~10ms at 48MHz
+            if (cs_counter >= 16'd480000) begin  // ~10ms at 48MHz
                 cs_counter <= '0;
                 cs_select <= ~cs_select;
             end else begin
