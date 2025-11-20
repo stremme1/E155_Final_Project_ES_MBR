@@ -10,12 +10,18 @@ module drum_system_top (
     input  logic        clk_ext,
     input  logic        rst_n,
     
-    // SPI Physical Pins (shared bus, two CS lines for two IMUs)
-    output logic        spi_sclk,      // SPI Clock (shared)
+    // SPI Physical Pins (shared bus, two CS lines for two BNO085 IMUs)
+    output logic        spi_sclk,      // SPI Clock (shared, Mode 3: CPOL=1, CPHA=1)
     output logic        spi_mosi,      // SPI Master Out Slave In (shared)
-    input  logic        spi_miso,       // SPI Master In Slave Out (shared)
-    output logic        spi_cs1_n,     // SPI Chip Select 1 (Right hand IMU)
-    output logic        spi_cs2_n,     // SPI Chip Select 2 (Left hand IMU)
+    input  logic        spi_miso,      // SPI Master In Slave Out (shared)
+    output logic        spi_cs1_n,     // SPI Chip Select 1 (Right hand BNO085, active low)
+    output logic        spi_cs2_n,     // SPI Chip Select 2 (Left hand BNO085, active low)
+    
+    // BNO085 Control Pins (required for stable SPI operation)
+    input  logic        bno085_1_int_n, // BNO085 #1 Interrupt (active low, data ready)
+    output logic        bno085_1_rst_n, // BNO085 #1 Reset (active low)
+    input  logic        bno085_2_int_n, // BNO085 #2 Interrupt (active low, data ready)
+    output logic        bno085_2_rst_n  // BNO085 #2 Reset (active low)
     
     // User Interface
     input  logic        button1,        // Kick drum button
