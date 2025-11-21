@@ -147,7 +147,7 @@ int main(void) {
         }
 
         // left hand logic
-        // if yaw in the range of 350-60 then play snare drum or hi-hat
+        // if yaw in the range of 350-100 then play snare drum or hi-hat
         if (yaw2 >= 350 || yaw2 <= 100) {
             if (gyro2_y < -2500 && !printedForGyro2y) {
                 // if facing up and not rotating fast around z axis
