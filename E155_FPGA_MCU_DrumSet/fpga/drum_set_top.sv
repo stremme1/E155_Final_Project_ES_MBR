@@ -1,8 +1,16 @@
 // Top-level module for BNO085-based Drum Set Gesture Detection System
 // Integrates SPI communication, sensor control, quaternion processing, and gesture detection
+//
+// NOTE: This module expects clk as an input.
+// For HARDWARE: Use drum_set_top_wrapper.sv which includes HSOSC clock generation
+// For SIMULATION: Testbenches should generate their own clock (HSOSC cannot be simulated)
+//
+// Clock Requirements:
+// - Hardware: Use HSOSC (internal oscillator) via wrapper module
+// - Simulation: Generate clock in testbench (see tb_*.sv files)
 
 module drum_set_top (
-    input  logic        clk,           // System clock (e.g., 50MHz)
+    input  logic        clk,           // System clock (from HSOSC in hardware, from testbench in simulation)
     input  logic        rst_n,         // Active-low reset
     
     // BNO085 Sensor 1 (Right Hand) - SPI Interface
