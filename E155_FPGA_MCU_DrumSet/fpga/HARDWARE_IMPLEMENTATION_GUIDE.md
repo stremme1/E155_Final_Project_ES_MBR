@@ -292,8 +292,8 @@ Create a constraints file (`.pcf` for Lattice, `.xdc` for Xilinx, `.qsf` for Alt
 
 ### Lattice iCE40 Example (`constraints.pcf`):
 ```
-set_io clk         <clock_pin> # System clock (check board docs)
-set_io rst_n       P43       # Reset button (active low)
+# Note: Clock is generated internally by HSOSC - no clock pin needed
+set_io rst_n       P43       # Reset button (active LOW - goes LOW to reset)
 
 # BNO085 Sensor 1 (Right Hand)
 set_io sclk1       P20         # SPI Clock
@@ -337,11 +337,12 @@ set_io led_error       P38          # LED for errors (HIGH when sensor error det
    - `gesture_detector.sv` - Gesture detection logic
    - `spi_to_mcu.sv` - SPI master for MCU communication
    - `spi_slave_model.sv` - SPI slave model (for simulation only)
-   - `drum_set_top.sv` - Main system module (clk as input)
-   - `drum_set_top_wrapper.sv` - **Top-level wrapper with HSOSC clock** (use this for hardware)
-3. **Set top-level module**: `drum_set_top_wrapper` (for hardware with HSOSC)
-   - **For simulation**: Use `drum_set_top` directly and generate clock in testbench
-4. **Clock**: HSOSC generates 3MHz from 48MHz (divide by 16)
+   - `drum_set_top.sv` - **Top-level module with HSOSC clock generation**
+3. **Set top-level module**: `drum_set_top`
+4. **Clock Configuration**:
+   - **Hardware**: HSOSC generates 3MHz from 48MHz (divide by 16) - active by default
+   - **Simulation**: Comment out HSOSC and uncomment simulation clock section in `drum_set_top.sv`
+5. **Reset Pin**: P43 (active LOW - `rst_n` goes LOW to reset)
 
 ### Step 2: Configure Parameters
 

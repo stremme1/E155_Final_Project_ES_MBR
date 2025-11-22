@@ -2,16 +2,16 @@
 
 ## Overview
 
-The system uses **HSOSC (High Speed Oscillator)** for hardware implementation, which cannot be simulated in testbenches. Therefore, we use a wrapper module approach:
+The system uses **HSOSC (High Speed Oscillator)** for hardware implementation, which cannot be simulated in testbenches. HSOSC is integrated directly into `drum_set_top.sv`:
 
-- **Hardware**: `drum_set_top_wrapper.sv` - Includes HSOSC clock generation
-- **Simulation**: `drum_set_top.sv` - Clock generated in testbench
+- **Hardware**: HSOSC section active (uncommented) - generates clock internally
+- **Simulation**: Comment out HSOSC, uncomment simulation clock section
 
 ## Hardware Clock (HSOSC)
 
 ### Configuration
 
-The `drum_set_top_wrapper.sv` module uses HSOSC to generate the system clock:
+The `drum_set_top.sv` module uses HSOSC to generate the system clock:
 
 ```systemverilog
 // HSOSC configuration: CLKHF_DIV(2'b11) = divide by 16
@@ -39,12 +39,12 @@ This 3MHz clock is suitable for:
 - MCU SPI communication (typically 1-10MHz)
 - All internal logic
 
-### Using the Wrapper for Hardware
+### Using HSOSC for Hardware
 
-1. **Set top-level module** to `drum_set_top_wrapper` in your FPGA project
-2. **HSOSC is automatically instantiated** and generates the clock
+1. **Set top-level module** to `drum_set_top` in your FPGA project
+2. **HSOSC is automatically instantiated** (uncommented by default) and generates the clock
 3. **No external clock pin needed** - clock is generated internally
-4. **Remove `clk` from pin assignments** - it's not an I/O pin anymore
+4. **Do not assign `clk` to a pin** - it's an internal signal, not an I/O pin
 
 ## Simulation Clock
 
@@ -68,9 +68,9 @@ end
 
 ### Using drum_set_top for Simulation
 
-1. **Instantiate `drum_set_top` directly** (not the wrapper)
-2. **Generate clock in testbench** (see examples above)
-3. **Connect clock to `drum_set_top.clk` input**
+1. **Comment out HSOSC section** in `drum_set_top.sv` (lines 89-93)
+2. **Uncomment simulation clock section** in `drum_set_top.sv` (lines 97-101)
+3. **Clock is generated internally** - no need to connect from testbench
 
 Example:
 ```systemverilog
@@ -93,9 +93,9 @@ drum_set_top dut (
 
 ### For Hardware Implementation:
 
-1. **Use `drum_set_top_wrapper.sv`** as top-level
-2. **HSOSC section is active** (uncommented)
-3. **Simulation clock section is commented out**
+1. **Use `drum_set_top.sv`** as top-level
+2. **HSOSC section is active** (uncommented, lines 89-93)
+3. **Simulation clock section is commented out** (lines 97-101)
 
 ```systemverilog
 // HARDWARE: Active
@@ -116,13 +116,14 @@ end
 
 ### For Simulation:
 
-1. **Use `drum_set_top.sv`** directly (not wrapper)
-2. **Generate clock in testbench**
-3. **HSOSC is not used** (cannot be simulated)
+1. **Use `drum_set_top.sv`** as top-level
+2. **Comment out HSOSC section** (lines 89-93)
+3. **Uncomment simulation clock section** (lines 97-101)
+4. **HSOSC is not used** (cannot be simulated)
 
 ## Pin Assignment
 
-### With HSOSC (Hardware - using wrapper):
+### With HSOSC (Hardware):
 
 **DO NOT assign `clk` to a pin** - it's generated internally by HSOSC.
 
@@ -186,11 +187,12 @@ set_io clk <clock_pin>  # External clock pin
 
 | Mode | Top Module | Clock Source | Notes |
 |------|------------|--------------|-------|
-| **Hardware** | `drum_set_top_wrapper` | HSOSC (internal) | 3MHz from 48MHz/16 |
-| **Simulation** | `drum_set_top` | Testbench | Generate in testbench |
+| **Hardware** | `drum_set_top` | HSOSC (internal) | 3MHz from 48MHz/16, uncomment HSOSC section |
+| **Simulation** | `drum_set_top` | Simulation clock | Comment out HSOSC, uncomment simulation clock |
 
 **Remember**: 
-- HSOSC cannot be simulated - use testbench clock for simulation
-- Wrapper module automatically handles clock for hardware
+- HSOSC cannot be simulated - comment it out and use simulation clock section
+- HSOSC is integrated directly in `drum_set_top.sv` - no wrapper needed
 - No external clock pin needed when using HSOSC
+- Reset pin: P43 (active LOW - goes LOW to reset)
 
