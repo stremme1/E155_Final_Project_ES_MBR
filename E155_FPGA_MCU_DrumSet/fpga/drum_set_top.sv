@@ -94,6 +94,7 @@ module drum_set_top (
     
     // SIMULATION CLOCK - UNCOMMENT FOR SIMULATION
     // Comment out HSOSC above and uncomment this section for testbenches
+    // For simulation: Comment out HSOSC instantiation (lines 89-93) and uncomment below
     /*
     initial begin
         clk = 0;

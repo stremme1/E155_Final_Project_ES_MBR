@@ -54,8 +54,9 @@ module tb_system_with_sim_imu;
     );
     
     // Instantiate DUT
+    // Note: clk is now generated internally in drum_set_top
+    // For simulation: Comment out HSOSC in drum_set_top.sv and uncomment simulation clock
     drum_set_top dut (
-        .clk(clk),
         .rst_n(rst_n),
         .sclk1(sclk1),
         .mosi1(mosi1),
@@ -89,10 +90,9 @@ module tb_system_with_sim_imu;
     );
     
     // Clock generation
-    initial begin
-        clk = 0;
-        forever #(CLK_PERIOD/2) clk = ~clk;
-    end
+    // NOTE: Clock is now generated inside drum_set_top
+    // For simulation: Comment out HSOSC in drum_set_top.sv and uncomment simulation clock section
+    // Clock generation removed from testbench - handled internally in drum_set_top
     
     // Test stimulus
     initial begin
