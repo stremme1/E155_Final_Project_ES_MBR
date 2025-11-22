@@ -24,8 +24,8 @@ module drum_set_top (
     // Note: int2 removed - interrupt pin not used (polling mode)
     
     // User Interface
-    input  logic        calib_button,   // Calibration button
-    input  logic        kick_button,    // Kick drum button (optional)
+    input  logic        calib_button,   // Calibration button (P11) - MUST BE CONNECTED
+    input  logic        kick_button,    // Kick drum button (optional, P2)
     
     // SPI Output to MCU
     output logic        mcu_sclk,       // SPI clock to MCU
