@@ -88,8 +88,15 @@ set_io mcu_cs_n      <pin>     # Chip select to MCU (need pin)
 
 ### Status LEDs (Optional) - 2 pins
 ```
-# set_io led_initialized <pin>  # Optional LED (need pin)
-# set_io led_error       <pin>  # Optional LED (need pin)
+# LED Functionality:
+# - led_initialized: HIGH when both BNO085 sensors are initialized
+# - led_error: HIGH when either sensor has an error
+# 
+# If you have available pins, assign them here:
+# set_io led_initialized <pin>  # LED when initialized (optional)
+# set_io led_error       <pin>  # LED for errors (optional)
+#
+# If no pins available, leave unconnected (LEDs are optional)
 ```
 
 ### ⚠️ PIN SHORTAGE WARNING

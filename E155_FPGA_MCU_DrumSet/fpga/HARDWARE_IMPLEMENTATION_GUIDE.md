@@ -318,8 +318,15 @@ set_io mcu_miso    16          # SPI MISO from MCU (optional)
 set_io mcu_cs_n    17          # Chip select to MCU
 
 # Status LEDs (optional)
-set_io led_initialized 15      # LED when initialized
-set_io led_error       16      # LED for errors
+# LED Functionality:
+# - led_initialized: HIGH when both BNO085 sensors are initialized
+# - led_error: HIGH when either sensor has an error
+# 
+# If you have available pins, assign them here:
+# set_io led_initialized <pin>  # LED when initialized (optional)
+# set_io led_error       <pin>  # LED for errors (optional)
+#
+# If no pins available, leave unconnected (LEDs are optional)
 ```
 
 **Important**: Adjust pin numbers based on your specific FPGA board!
