@@ -57,19 +57,18 @@ set_io rst_n   Reset           # Reset button (active low)
 
 ### BNO085 Sensor 1 (Right Hand) - 4 pins
 ```
-set_io sclk1   P0              # SPI clock to Sensor 1
-set_io mosi1   P1              # SPI MOSI to Sensor 1
-set_io miso1   DI              # SPI MISO from Sensor 1
-set_io cs_n1   CS              # Chip select to Sensor 1
+set_io sclk1   P20             # SPI clock to Sensor 1
+set_io mosi1   P13             # SPI MOSI to Sensor 1
+set_io miso1   P12             # SPI MISO from Sensor 1
+set_io cs_n1   P18             # Chip select to Sensor 1
 ```
 
 ### BNO085 Sensor 2 (Left Hand) - 4 pins
 ```
-# Check if SCL/SDA/INT can be used as GPIO (may be I2C-only pins)
-set_io sclk2   SCL             # SPI clock to Sensor 2 (if GPIO-capable)
-set_io mosi2   SDA             # SPI MOSI to Sensor 2 (if GPIO-capable)
-set_io miso2   INT             # SPI MISO from Sensor 2 (if GPIO-capable)
-set_io cs_n2   3BO             # Chip select to Sensor 2 (if GPIO-capable)
+set_io sclk2   P4              # SPI clock to Sensor 2
+set_io mosi2   P47             # SPI MOSI to Sensor 2
+set_io miso2   P6              # SPI MISO from Sensor 2
+set_io cs_n2   P48             # Chip select to Sensor 2
 ```
 
 ### User Interface - 1 pin
@@ -120,17 +119,16 @@ set_io clk     <your_clock_pin>   # Check board documentation
 set_io rst_n   Reset               # Reset button
 
 # BNO085 Sensor 1 (Right Hand)
-set_io sclk1   P0                  # SPI clock
-set_io mosi1   P1                  # SPI MOSI
-set_io miso1   DI                  # SPI MISO
-set_io cs_n1   CS                  # Chip select
+set_io sclk1   P20                 # SPI clock
+set_io mosi1   P13                  # SPI MOSI
+set_io miso1   P12                  # SPI MISO
+set_io cs_n1   P18                  # Chip select
 
 # BNO085 Sensor 2 (Left Hand)
-# Note: You may need additional pins - check if SCL/SDA/INT can be reused
-set_io sclk2   SCL                 # SPI clock (if available)
-set_io mosi2   SDA                 # SPI MOSI (if available)
-set_io miso2   INT                 # SPI MISO (if available)
-set_io cs_n2   <pin>               # Chip select (need another pin)
+set_io sclk2   P4                   # SPI clock
+set_io mosi2   P47                  # SPI MOSI
+set_io miso2   P6                   # SPI MISO
+set_io cs_n2   P48                  # Chip select
 
 # User Interface
 set_io calib_button  BT            # Calibration button

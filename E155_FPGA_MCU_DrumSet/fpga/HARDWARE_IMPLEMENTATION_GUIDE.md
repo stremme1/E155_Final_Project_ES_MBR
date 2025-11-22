@@ -112,51 +112,56 @@ This is an **invisible drum set** that detects drumming gestures using motion se
 BNO085 Breakout Board:
 ┌─────────────────┐
 │  VIN  GND  RST  │
-│  INT   CS  SDO  │
-│  SDA  SCL  ADR  │
+│  INT   CS  SDA  │
+│  DI   SCL  ADR  │
 └─────────────────┘
 
-Pin Functions:
-- VIN: Power (3.3V or 5V)
-- GND: Ground
-- SCL/SCK: SPI Clock (from FPGA)
-- SDA/MOSI: SPI Master Out (from FPGA)
-- SDO/MISO: SPI Master In (to FPGA)
-- CS: Chip Select (from FPGA, active low)
-- INT: Interrupt (optional, to FPGA)
-- RST: Reset (optional, can be tied high)
-- ADR: I2C Address (not used in SPI mode)
+SPI Pin Functions (from Adafruit BNO085 Datasheet):
+- VIN: Power (3.3V or 5V) - Power input with onboard regulator
+- GND: Ground - Common ground
+- SCL: SPI Clock (SCK) - Input to chip, clock signal
+- DI: Data In / MOSI - Data FROM processor TO sensor (FPGA sends data)
+- SDA: Data Out / MISO - Data FROM sensor TO processor (FPGA receives data)
+- CS: Chip Select - Input to chip, pull LOW to start SPI transaction
+- INT: Interrupt - Active Low (optional, not used in polling mode)
+- RST: Reset - Active Low, tie to 3.3V (keep HIGH, required for stable SPI)
+- ADR: I2C Address pin (not used in SPI mode)
 ```
 
 ### Wiring Diagram
 
 #### **BNO085 Sensor 1 (Right Hand)**
 ```
-BNO085-1          FPGA
-─────────────────────────
-VIN      →       3.3V (or 5V)
-GND      →       GND
-SCL/SCK  →       GPIO Pin (e.g., Pin 1) → sclk1
-SDA/MOSI →       GPIO Pin (e.g., Pin 2) → mosi1
-SDO/MISO →       GPIO Pin (e.g., Pin 3) → miso1
-CS       →       GPIO Pin (e.g., Pin 4) → cs_n1
-INT      →       GPIO Pin (e.g., Pin 5) → int1 (optional)
-RST      →       3.3V (or leave floating with pull-up)
+BNO085-1 Pin      FPGA Pin    FPGA Signal
+─────────────────────────────────────────
+VIN      →       3.3V (or 5V) → Power
+GND      →       GND          → Ground
+SCL      →       P20          → sclk1 (SPI clock)
+DI       →       P13          → mosi1 (FPGA sends data)
+SDA      →       P12          → miso1 (sensor sends data)
+CS       →       P18          → cs_n1 (chip select, with 10kΩ pull-up)
+INT      →       (unconnected) → Not used (polling mode)
+RST      →       3.3V         → Reset (keep HIGH, active LOW)
 ```
 
 #### **BNO085 Sensor 2 (Left Hand)**
 ```
-BNO085-2          FPGA
-─────────────────────────
-VIN      →       3.3V (or 5V)
-GND      →       GND
-SCL/SCK  →       GPIO Pin (e.g., Pin 6) → sclk2
-SDA/MOSI →       GPIO Pin (e.g., Pin 7) → mosi2
-SDO/MISO →       GPIO Pin (e.g., Pin 8) → miso2
-CS       →       GPIO Pin (e.g., Pin 9) → cs_n2
-INT      →       GPIO Pin (e.g., Pin 10) → int2 (optional)
-RST      →       3.3V (or leave floating with pull-up)
+BNO085-2 Pin      FPGA Pin    FPGA Signal
+─────────────────────────────────────────
+VIN      →       3.3V (or 5V) → Power
+GND      →       GND          → Ground
+SCL      →       P4           → sclk2 (SPI clock)
+DI       →       P47          → mosi2 (FPGA sends data)
+SDA      →       P6           → miso2 (sensor sends data)
+CS       →       P48          → cs_n2 (chip select, with 10kΩ pull-up)
+INT      →       (unconnected) → Not used (polling mode)
+RST      →       3.3V         → Reset (keep HIGH, active LOW)
 ```
+
+**Important**: 
+- BNO085 **DI** pin = **MOSI** (data FROM FPGA TO sensor)
+- BNO085 **SDA** pin = **MISO** (data FROM sensor TO FPGA)
+- These are BNO085 pin names, NOT FPGA pin names
 
 #### **SPI Connection to MCU**
 ```
@@ -287,26 +292,24 @@ Create a constraints file (`.pcf` for Lattice, `.xdc` for Xilinx, `.qsf` for Alt
 
 ### Lattice iCE40 Example (`constraints.pcf`):
 ```
-set_io clk         21          # System clock (50MHz)
-set_io rst_n       23          # Reset button (active low)
+set_io clk         <clock_pin> # System clock (check board docs)
+set_io rst_n       Reset       # Reset button (active low)
 
 # BNO085 Sensor 1 (Right Hand)
-set_io sclk1       1           # SPI Clock
-set_io mosi1       2           # SPI MOSI
-set_io miso1       3           # SPI MISO
-set_io cs_n1       4           # Chip Select
-set_io int1        5           # Interrupt (optional)
+set_io sclk1       P20         # SPI Clock
+set_io mosi1       P13         # SPI MOSI
+set_io miso1       P12         # SPI MISO
+set_io cs_n1       P18         # Chip Select
 
 # BNO085 Sensor 2 (Left Hand)
-set_io sclk2       6           # SPI Clock
-set_io mosi2       7           # SPI MOSI
-set_io miso2       8           # SPI MISO
-set_io cs_n2       9           # Chip Select
-set_io int2        10          # Interrupt (optional)
+set_io sclk2       P4          # SPI Clock
+set_io mosi2       P47         # SPI MOSI
+set_io miso2       P6          # SPI MISO
+set_io cs_n2       P48         # Chip Select
 
 # User Interface
-set_io calib_button 12         # Calibration button
-set_io kick_button  13         # Kick button (optional)
+set_io calib_button BT         # Calibration button
+# set_io kick_button <pin>      # Kick button (optional)
 
 # SPI Output to MCU
 set_io mcu_sclk    14          # SPI clock to MCU

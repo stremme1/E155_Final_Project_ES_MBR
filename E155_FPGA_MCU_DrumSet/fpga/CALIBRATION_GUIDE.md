@@ -70,7 +70,7 @@ Calibration Button:
 
 In your constraints file (`.pcf`, `.xdc`, or `.qsf`):
 ```
-set_io calib_button 12    # Example pin number
+set_io calib_button BT    # Calibration button pin
 ```
 
 ### Button Type:
