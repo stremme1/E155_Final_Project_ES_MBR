@@ -26,13 +26,20 @@ module tb_calibration;
     logic calib_active;
     
     // Capture yaw offsets (simulating top-level behavior)
+    // Only capture on rising edge of calib_active, not continuously
+    logic calib_active_prev;
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             yaw_offset1 <= 16'd0;
             yaw_offset2 <= 16'd0;
-        end else if (calib_active && data_valid_1 && data_valid_2) begin
-            yaw_offset1 <= yaw1;
-            yaw_offset2 <= yaw2;
+            calib_active_prev <= 1'b0;
+        end else begin
+            calib_active_prev <= calib_active;
+            // Capture offsets only on rising edge of calib_active when data is valid
+            if (calib_active && !calib_active_prev && data_valid_1 && data_valid_2) begin
+                yaw_offset1 <= yaw1;
+                yaw_offset2 <= yaw2;
+            end
         end
     end
     
