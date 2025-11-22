@@ -308,8 +308,8 @@ set_io miso2       P6          # SPI MISO
 set_io cs_n2       P48         # Chip Select
 
 # User Interface
-set_io calib_button BT         # Calibration button
-# set_io kick_button <pin>      # Kick button (optional)
+set_io calib_button P11        # Calibration button (left button)
+set_io kick_button   P2        # Kick button (right button)
 
 # SPI Output to MCU
 set_io mcu_sclk    14          # SPI clock to MCU

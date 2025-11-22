@@ -71,10 +71,10 @@ set_io miso2   P6              # SPI MISO from Sensor 2
 set_io cs_n2   P48             # Chip select to Sensor 2
 ```
 
-### User Interface - 1 pin
+### User Interface - 2 pins
 ```
-set_io calib_button  BT        # Calibration button
-# set_io kick_button  <pin>    # Kick button (optional - need extra pin)
+set_io calib_button  P11       # Calibration button (left button)
+set_io kick_button    P2        # Kick button (right button)
 ```
 
 ### MCU SPI Communication - 3 pins NEEDED
@@ -131,8 +131,8 @@ set_io miso2   P6                   # SPI MISO
 set_io cs_n2   P48                  # Chip select
 
 # User Interface
-set_io calib_button  BT            # Calibration button
-# set_io kick_button  <pin>        # Optional kick button
+set_io calib_button  P11          # Calibration button (left button)
+set_io kick_button    P2          # Kick button (right button)
 
 # MCU SPI Communication
 set_io mcu_sclk      <pin>         # SPI clock to MCU
@@ -157,7 +157,8 @@ You listed these pins: `BT, P0, P1, Reset, DI, CS, VIN, 3BO, Ground, SCL, SDA, I
 - `clk`, `rst_n` - System signals
 - `sclk1`, `mosi1`, `miso1`, `cs_n1` - Sensor 1 (4 pins)
 - `sclk2`, `mosi2`, `miso2`, `cs_n2` - Sensor 2 (4 pins)
-- `calib_button` - Calibration (1 pin)
+- `calib_button` - Calibration button (P11)
+- `kick_button` - Kick button (P2)
 - `mcu_sclk`, `mcu_mosi`, `mcu_cs_n` - MCU SPI (3 pins)
 
 **Total: ~15 pins needed**

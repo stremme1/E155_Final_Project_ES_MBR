@@ -38,7 +38,8 @@ If your synthesis tool shows `calib_button` as "unconnected", it's likely becaus
 Add this to your constraints file (`.pcf`, `.xdc`, or `.qsf`):
 
 ```
-set_io calib_button BT    # Calibration button pin
+set_io calib_button P11   # Calibration button (left button)
+set_io kick_button   P2   # Kick button (right button)
 ```
 
 ## Hardware Connection
