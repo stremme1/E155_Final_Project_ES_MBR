@@ -16,7 +16,7 @@ module spi_to_mcu #(
     // SPI interface to MCU
     output logic        mcu_sclk,       // SPI clock to MCU
     output logic        mcu_mosi,       // SPI master out (to MCU)
-    input  logic        mcu_miso,        // SPI master in (from MCU, optional)
+    input  logic        mcu_miso,        // SPI master in (from MCU, not used - one-way communication)
     output logic        mcu_cs_n,       // Chip select (active low)
     
     // Status

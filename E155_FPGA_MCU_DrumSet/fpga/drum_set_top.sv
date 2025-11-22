@@ -10,14 +10,14 @@ module drum_set_top (
     output logic        mosi1,          // SPI master out
     input  logic        miso1,          // SPI master in
     output logic        cs_n1,          // Chip select (active low)
-    input  logic        int1,           // Interrupt pin (optional)
+    // Note: int1 removed - interrupt pin not used (polling mode)
     
     // BNO085 Sensor 2 (Left Hand) - SPI Interface
     output logic        sclk2,
     output logic        mosi2,
     input  logic        miso2,
     output logic        cs_n2,
-    input  logic        int2,
+    // Note: int2 removed - interrupt pin not used (polling mode)
     
     // User Interface
     input  logic        calib_button,   // Calibration button
@@ -26,7 +26,8 @@ module drum_set_top (
     // SPI Output to MCU
     output logic        mcu_sclk,       // SPI clock to MCU
     output logic        mcu_mosi,       // SPI master out to MCU
-    input  logic        mcu_miso,       // SPI master in from MCU (optional)
+    // Note: mcu_miso removed - not used (one-way communication: FPGA→MCU only)
+    // If bidirectional communication needed in future, add back: input logic mcu_miso;
     output logic        mcu_cs_n,       // Chip select to MCU (active low)
     
     // Status LEDs (optional)
@@ -262,7 +263,7 @@ module drum_set_top (
         .sound_code(mcu_sound_code),
         .mcu_sclk(mcu_sclk),
         .mcu_mosi(mcu_mosi),
-        .mcu_miso(mcu_miso),
+        .mcu_miso(1'b0),  // Not used - one-way communication (FPGA→MCU only)
         .mcu_cs_n(mcu_cs_n),
         .busy(mcu_busy)
     );
