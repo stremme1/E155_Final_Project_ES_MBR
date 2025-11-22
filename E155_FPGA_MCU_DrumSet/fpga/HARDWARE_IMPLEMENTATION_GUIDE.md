@@ -317,16 +317,9 @@ set_io mcu_mosi    15          # SPI MOSI to MCU
 set_io mcu_miso    16          # SPI MISO from MCU (optional)
 set_io mcu_cs_n    17          # Chip select to MCU
 
-# Status LEDs (optional)
-# LED Functionality:
-# - led_initialized: HIGH when both BNO085 sensors are initialized
-# - led_error: HIGH when either sensor has an error
-# 
-# If you have available pins, assign them here:
-# set_io led_initialized <pin>  # LED when initialized (optional)
-# set_io led_error       <pin>  # LED for errors (optional)
-#
-# If no pins available, leave unconnected (LEDs are optional)
+# Status LEDs
+set_io led_initialized P28          # LED when initialized (HIGH when both sensors ready)
+set_io led_error       P38          # LED for errors (HIGH when sensor error detected)
 ```
 
 **Important**: Adjust pin numbers based on your specific FPGA board!

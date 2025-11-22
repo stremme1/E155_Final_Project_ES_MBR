@@ -35,12 +35,14 @@ FPGA led_error       → 220Ω resistor → LED+ → LED- → GND
 
 In your constraints file (`.pcf`, `.xdc`, or `.qsf`):
 ```
-# Status LEDs (optional - assign pins if available)
-set_io led_initialized <pin>  # LED when initialized
-set_io led_error       <pin>  # LED for errors
+# Status LEDs
+set_io led_initialized P28  # LED when initialized
+set_io led_error       P38  # LED for errors
 ```
 
-**Note**: LEDs are optional. If you don't have available pins, you can leave these signals unconnected.
+**Pin Assignments:**
+- `led_initialized` → **P28**
+- `led_error` → **P38**
 
 ## Usage
 

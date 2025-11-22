@@ -86,17 +86,10 @@ set_io mcu_mosi      <pin>     # SPI MOSI to MCU (need pin)
 set_io mcu_cs_n      <pin>     # Chip select to MCU (need pin)
 ```
 
-### Status LEDs (Optional) - 2 pins
+### Status LEDs - 2 pins
 ```
-# LED Functionality:
-# - led_initialized: HIGH when both BNO085 sensors are initialized
-# - led_error: HIGH when either sensor has an error
-# 
-# If you have available pins, assign them here:
-# set_io led_initialized <pin>  # LED when initialized (optional)
-# set_io led_error       <pin>  # LED for errors (optional)
-#
-# If no pins available, leave unconnected (LEDs are optional)
+set_io led_initialized P28  # LED when initialized (HIGH when both sensors ready)
+set_io led_error       P38  # LED for errors (HIGH when sensor error detected)
 ```
 
 ### ⚠️ PIN SHORTAGE WARNING
@@ -146,9 +139,9 @@ set_io mcu_sclk      <pin>         # SPI clock to MCU
 set_io mcu_mosi      <pin>         # SPI MOSI to MCU
 set_io mcu_cs_n      <pin>         # Chip select to MCU
 
-# Status LEDs (Optional)
-# set_io led_initialized <pin>      # Optional LED
-# set_io led_error       <pin>      # Optional LED
+# Status LEDs
+set_io led_initialized P28          # LED when initialized
+set_io led_error       P38          # LED for errors
 ```
 
 ---
