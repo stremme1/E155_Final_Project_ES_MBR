@@ -312,10 +312,9 @@ set_io calib_button P11        # Calibration button (left button)
 set_io kick_button   P2        # Kick button (right button)
 
 # SPI Output to MCU
-set_io mcu_sclk    14          # SPI clock to MCU
-set_io mcu_mosi    15          # SPI MOSI to MCU
-set_io mcu_miso    16          # SPI MISO from MCU (optional)
-set_io mcu_cs_n    17          # Chip select to MCU
+set_io mcu_sclk    P21         # SPI clock to MCU
+set_io mcu_mosi    P10         # SPI MOSI to MCU
+set_io mcu_cs_n    P19         # Chip select to MCU (needs 10kΩ pull-up)
 
 # Status LEDs
 set_io led_initialized P28          # LED when initialized (HIGH when both sensors ready)

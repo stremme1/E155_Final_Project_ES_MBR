@@ -77,13 +77,11 @@ set_io calib_button  P11       # Calibration button (left button)
 set_io kick_button    P2        # Kick button (right button)
 ```
 
-### MCU SPI Communication - 3 pins NEEDED
+### MCU SPI Communication - 3 pins
 ```
-# WARNING: You need 3 more pins for MCU SPI!
-# Check your board for additional GPIO pins (P2, P3, P4, etc.)
-set_io mcu_sclk      <pin>     # SPI clock to MCU (need pin)
-set_io mcu_mosi      <pin>     # SPI MOSI to MCU (need pin)
-set_io mcu_cs_n      <pin>     # Chip select to MCU (need pin)
+set_io mcu_sclk      P21       # SPI clock to MCU
+set_io mcu_mosi      P10       # SPI MOSI to MCU
+set_io mcu_cs_n      P19       # Chip select to MCU (needs 10kΩ pull-up)
 ```
 
 ### Status LEDs - 2 pins
@@ -135,9 +133,9 @@ set_io calib_button  P11          # Calibration button (left button)
 set_io kick_button    P2          # Kick button (right button)
 
 # MCU SPI Communication
-set_io mcu_sclk      <pin>         # SPI clock to MCU
-set_io mcu_mosi      <pin>         # SPI MOSI to MCU
-set_io mcu_cs_n      <pin>         # Chip select to MCU
+set_io mcu_sclk      P21          # SPI clock to MCU
+set_io mcu_mosi      P10          # SPI MOSI to MCU
+set_io mcu_cs_n      P19          # Chip select to MCU (needs 10kΩ pull-up)
 
 # Status LEDs
 set_io led_initialized P28          # LED when initialized
@@ -229,9 +227,9 @@ Your board might have:
 | `cs_n1`, `cs_n2` | Output | FPGA → | Chip selects (need pull-ups) |
 | `calib_button` | Input | → FPGA | Button (needs pull-up, P11) |
 | `kick_button` | Input | → FPGA | Button (needs pull-up, P2) |
-| `mcu_sclk` | Output | FPGA → | MCU SPI clock |
-| `mcu_mosi` | Output | FPGA → | MCU SPI MOSI |
-| `mcu_cs_n` | Output | FPGA → | MCU chip select (needs pull-up) |
+| `mcu_sclk` | Output | FPGA → | MCU SPI clock (P21) |
+| `mcu_mosi` | Output | FPGA → | MCU SPI MOSI (P10) |
+| `mcu_cs_n` | Output | FPGA → | MCU chip select (P19, needs pull-up) |
 | `led_initialized` | Output | FPGA → | Status LED (P28) |
 | `led_error` | Output | FPGA → | Error LED (P38) |
 

@@ -1,0 +1,32 @@
+# Complete Pin Assignment Constraints File
+# Copy this to your Radiant project as constraints.pcf
+# Update <clock_pin> with your actual clock pin from board documentation
+
+# System Clock and Reset
+set_io clk     <clock_pin>   # System clock - CHECK YOUR BOARD DOCS!
+set_io rst_n   Reset         # Reset button (active low)
+
+# BNO085 Sensor 1 (Right Hand)
+set_io sclk1   P20           # SPI clock
+set_io mosi1   P13           # SPI MOSI
+set_io miso1   P12           # SPI MISO
+set_io cs_n1   P18           # Chip select (needs 10kΩ pull-up)
+
+# BNO085 Sensor 2 (Left Hand)
+set_io sclk2   P4            # SPI clock
+set_io mosi2   P47           # SPI MOSI
+set_io miso2   P6            # SPI MISO
+set_io cs_n2   P48           # Chip select (needs 10kΩ pull-up)
+
+# User Interface Buttons
+set_io calib_button  P11     # Calibration button (left button, needs 10kΩ pull-up)
+set_io kick_button    P2     # Kick button (right button, needs 10kΩ pull-up)
+
+# MCU SPI Communication
+set_io mcu_sclk      P21     # SPI clock to MCU
+set_io mcu_mosi      P10     # SPI MOSI to MCU
+set_io mcu_cs_n      P19     # Chip select to MCU (needs 10kΩ pull-up)
+
+# Status LEDs
+set_io led_initialized P28   # LED when initialized (HIGH when both sensors ready)
+set_io led_error       P38   # LED for errors (HIGH when sensor error detected)

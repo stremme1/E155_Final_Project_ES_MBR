@@ -35,12 +35,16 @@ If your synthesis tool shows `calib_button` as "unconnected", it's likely becaus
 
 ## Required Pin Assignment
 
-Add this to your constraints file (`.pcf`, `.xdc`, or `.qsf`):
+**CRITICAL**: You MUST add this to your constraints file (`.pcf`, `.xdc`, or `.qsf`) for the synthesis tool to recognize the connection:
 
 ```
 set_io calib_button P11   # Calibration button (left button)
 set_io kick_button   P2   # Kick button (right button)
 ```
+
+**If you see "unconnected" warning**: This means the pin assignment is missing from your constraints file. Add the line above to your constraints file and re-run synthesis.
+
+See `constraints_example.pcf` for a complete example of all pin assignments.
 
 ## Hardware Connection
 

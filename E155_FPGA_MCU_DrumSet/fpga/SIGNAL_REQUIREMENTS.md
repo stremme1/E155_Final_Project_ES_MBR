@@ -51,9 +51,9 @@
 # Required pins
 set_io calib_button P11   # Calibration button (left button, with 10kΩ pull-up)
 set_io kick_button   P2   # Kick button (right button, with 10kΩ pull-up)
-set_io mcu_sclk     14    # SPI clock to MCU
-set_io mcu_mosi     15    # SPI MOSI to MCU
-set_io mcu_cs_n     17    # Chip select to MCU (with 10kΩ pull-up)
+set_io mcu_sclk     P21   # SPI clock to MCU
+set_io mcu_mosi     P10   # SPI MOSI to MCU
+set_io mcu_cs_n     P19   # Chip select to MCU (with 10kΩ pull-up)
 
 # Removed pins (no longer needed)
 # set_io int1        5    # REMOVED - Not used
