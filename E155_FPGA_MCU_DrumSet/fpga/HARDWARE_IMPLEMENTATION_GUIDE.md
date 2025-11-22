@@ -99,11 +99,12 @@ This is an **invisible drum set** that detects drumming gestures using motion se
 
 1. **FPGA Board** (e.g., Lattice iCE40, Xilinx Artix-7, Altera Cyclone)
 2. **2x BNO085 IMU Sensors** (Adafruit breakout boards)
-3. **USB-to-UART Adapter** (FTDI, CP2102, or similar)
+3. **MCU Board** (Arduino, ESP32, STM32, or similar) - Receives sound codes via SPI
 4. **Calibration Button** (momentary push button)
-5. **Power Supply** (3.3V or 5V for sensors)
-6. **Resistors** (10kΩ pull-ups for buttons)
-7. **Breadboard/Jumper Wires**
+5. **Kick Button** (optional, for kick drum trigger)
+6. **Power Supply** (3.3V or 5V for sensors and FPGA)
+7. **Resistors** (10kΩ pull-ups for buttons and CS signals)
+8. **Breadboard/Jumper Wires**
 
 ### BNO085 Sensor Pinout
 
@@ -328,11 +329,12 @@ set_io led_error       16      # LED for errors
 
 1. **Create new project** in your FPGA toolchain (Vivado, Quartus, Diamond, etc.)
 2. **Add all SystemVerilog files**:
-   - `spi_master.sv`
-   - `bno085_controller.sv`
-   - `quaternion_to_euler.sv`
-   - `gesture_detector.sv`
-   - `uart_tx.sv`
+   - `spi_master.sv` - SPI master for BNO085 sensors
+   - `bno085_controller.sv` - BNO085 sensor controller
+   - `quaternion_to_euler.sv` - Quaternion to Euler conversion
+   - `gesture_detector.sv` - Gesture detection logic
+   - `spi_to_mcu.sv` - SPI master for MCU communication
+   - `spi_slave_model.sv` - SPI slave model (for simulation only)
    - `drum_set_top.sv` (top-level)
 3. **Set top-level module**: `drum_set_top`
 4. **Set system clock frequency**: e.g., 50MHz
@@ -369,10 +371,13 @@ parameter CLK_DIV = 16;  // For 50MHz clock: 50MHz/16 = 3.125MHz SPI (within 3MH
 
 1. **Power off everything**
 2. **Connect BNO085 sensors** to FPGA (see wiring diagram)
-3. **Connect UART** to computer
-4. **Connect calibration button**
-5. **Double-check all connections**
-6. **Power on** (FPGA first, then sensors)
+   - Add 10kΩ pull-up resistors to CS_N pins (cs_n1, cs_n2)
+3. **Connect MCU** to FPGA SPI pins (see SPI Connection to MCU diagram)
+   - Add 10kΩ pull-up resistor to mcu_cs_n
+4. **Connect calibration button** with 10kΩ pull-up resistor
+5. **Connect reset button** with 10kΩ pull-up resistor
+6. **Double-check all connections**
+7. **Power on** (FPGA first, then sensors, then MCU)
 
 ### Step 6: Test SPI Communication
 
@@ -419,24 +424,43 @@ Use a logic analyzer or oscilloscope to verify:
    // Example Arduino/ESP32 code
    #include <SPI.h>
    
+   #define CS_PIN 10  // Chip select pin from FPGA
+   
    void setup() {
-     SPI.begin();  // Initialize SPI in slave mode
-     pinMode(SS, INPUT);  // CS pin
-     SPI.setClockDivider(SPI_CLOCK_DIV2);
      Serial.begin(115200);
+     pinMode(CS_PIN, INPUT);  // CS pin from FPGA
+     SPI.begin();  // Initialize SPI in slave mode
+     // SPI Mode 0: CPOL=0, CPHA=0
+     // Clock idle low, sample on rising edge
+     Serial.println("MCU SPI Slave Ready");
    }
    
    void loop() {
-     if (digitalRead(SS) == LOW) {  // CS asserted
-       byte sound_code = SPI.transfer(0);  // Read data
-       Serial.print("Sound: ");
+     if (digitalRead(CS_PIN) == LOW) {  // CS asserted by FPGA
+       // Wait for CS to go low, then read data
+       byte sound_code = SPI.transfer(0);  // Read 8-bit data
+       sound_code = sound_code & 0x0F;  // Lower 4 bits contain sound code (0-7)
+       
+       Serial.print("Sound Code: ");
        Serial.println(sound_code);
-       // Trigger audio playback based on sound_code
+       
+       // Trigger audio playback based on sound_code:
+       // 0 = Snare, 1 = Hi-hat, 2 = Kick, 3 = High tom
+       // 4 = Mid tom, 5 = Crash, 6 = Ride, 7 = Floor tom
+       playSound(sound_code);
      }
+   }
+   
+   void playSound(byte code) {
+     // Your audio playback code here
+     // e.g., trigger WAV files, MIDI notes, etc.
    }
    ```
 
-2. **Test**: Wave sticks → MCU should receive sound codes (0-7) → Trigger audio playback
+2. **Test**: 
+   - Wave sticks → FPGA detects gestures → Sends sound codes via SPI
+   - MCU receives sound codes (0-7) → Triggers audio playback
+   - Verify all 8 sound codes are received correctly
 
 ---
 
@@ -480,13 +504,24 @@ Use a logic analyzer or oscilloscope to verify:
 **Symptoms**: MCU not receiving data, no response
 
 **Solutions**:
-- Check SPI wiring (SCLK, MOSI, CS, GND)
+- Check SPI wiring (SCLK, MOSI, CS_N, GND)
+- **Add 10kΩ pull-up resistor to mcu_cs_n** (critical!)
 - Verify SPI mode matches (Mode 0: CPOL=0, CPHA=0)
-- Check clock speed (adjust CLK_DIV if too fast for MCU)
+  - Clock idle LOW
+  - Data sampled on rising edge
+- Check clock speed (adjust CLK_DIV in `spi_to_mcu.sv` if too fast for MCU)
+  - Default: CLK_DIV=16 for 50MHz → 3.125MHz SPI clock
 - Verify MCU is configured as SPI slave
-- Check CS polarity (active low)
-- Use logic analyzer to verify SPI signals
-- Verify MCU SPI settings match FPGA (MSB first, 8-bit transfers)
+- Check CS polarity (active low - CS goes LOW during transfer)
+- Use logic analyzer to verify SPI signals:
+  - CS should go LOW before SCLK starts
+  - 8 SCLK cycles per transfer
+  - MOSI data should be stable before SCLK rising edge
+- Verify MCU SPI settings match FPGA:
+  - MSB first
+  - 8-bit transfers
+  - Mode 0 (CPOL=0, CPHA=0)
+- Check that MCU reads data when CS goes LOW, not on SCLK edges
 
 ### Problem: Timing Issues
 
@@ -503,22 +538,37 @@ Use a logic analyzer or oscilloscope to verify:
 
 ## Testing Checklist
 
+### FPGA Setup
 - [ ] FPGA synthesizes without errors
 - [ ] All pins assigned correctly
 - [ ] Bitstream programs successfully
+- [ ] Pull-up resistors installed (CS_N, RST_N, buttons)
+
+### Sensor Communication
 - [ ] SPI signals visible on oscilloscope/logic analyzer
-- [ ] Sensors initialize (check `initialized` signal)
+- [ ] Sensors initialize (check `led_initialized` signal)
 - [ ] Quaternion data received (check `quat_valid`)
 - [ ] Gyroscope data received (check `gyro_valid`)
 - [ ] Euler angles calculated correctly
-- [ ] SPI outputs sound codes to MCU
-- [ ] MCU receives sound codes correctly
-- [ ] Calibration button works
+
+### Calibration
+- [ ] Calibration button works (see CALIBRATION_GUIDE.md)
+- [ ] Yaw offsets captured correctly
+- [ ] Normalized yaw values update after calibration
+
+### Gesture Detection
 - [ ] Gesture detection triggers sound codes
-- [ ] MCU receives sound codes and triggers audio playback
-- [ ] All zones detect correctly
+- [ ] All zones detect correctly (8 zones total)
 - [ ] Cymbal detection works (high pitch)
 - [ ] Hi-hat detection works (pitch + rotation)
+- [ ] Strike detection works (gyro threshold)
+
+### MCU Communication
+- [ ] SPI to MCU signals visible (SCLK, MOSI, CS_N)
+- [ ] MCU configured as SPI slave (Mode 0)
+- [ ] MCU receives sound codes correctly
+- [ ] All 8 sound codes (0-7) received
+- [ ] MCU triggers audio playback based on sound codes
 
 ---
 
