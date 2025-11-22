@@ -30,12 +30,12 @@ Note: SDO on BNO085 = MISO (Master In, Slave Out)
 
 ### BNO085 Sensor 1 (Right Hand)
 
-| BNO085 Pin | Function | FPGA Signal | Pin Options | Notes |
-|------------|----------|-------------|-------------|-------|
-| **SCL** | SPI Clock | `sclk1` | P20 | Output from FPGA |
-| **SDA** | SPI MOSI | `mosi1` |  P12 | Output from FPGA |
-| **SDO** | SPI MISO | `miso1` | DI, P13 | Input to FPGA | Not an postion 
-| **CS** | Chip Select | `cs_n1` | P18 | Output from FPGA (needs 10kΩ pull-up) |
+| BNO085 Pin | Function | FPGA Signal | FPGA Pin Options | Notes |
+|------------|----------|-------------|------------------|-------|
+| **SCL** (or SCK) | SPI Clock | `sclk1` | P0, P20 | Output: FPGA → Sensor |
+| **SDA** (or MOSI) | SPI Master Out | `mosi1` | P1, P12 | Output: FPGA → Sensor |
+| **SDO** (or MISO) | SPI Master In | `miso1` | DI, P13 | Input: Sensor → FPGA |
+| **CS** | Chip Select | `cs_n1` | CS, P18 | Output: FPGA → Sensor (needs 10kΩ pull-up) |
 
 | **VIN** | Power | - | 3.3V | Power supply |
 | **GND** | Ground | - | GND | Ground connection |
