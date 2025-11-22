@@ -63,7 +63,7 @@ module spi_master #(
         if (!rst_n) begin
             state <= IDLE;
             bit_cnt <= 4'd0;
-            tx_shift <= 8'd0;
+            tx_shift <= 8'd0;  // MOSI will be 0 when idle
             rx_shift <= 8'd0;
             sclk_en <= 1'b0;
             cs_n <= 1'b1;
@@ -78,6 +78,7 @@ module spi_master #(
                     sclk_en <= 1'b0;
                     bit_cnt <= 4'd0;
                     tx_ready <= 1'b1;
+                    // tx_shift retains value (MOSI driven via assign)
                     
                     if (start && tx_valid) begin
                         state <= TX_RX;
@@ -117,6 +118,8 @@ module spi_master #(
         end
     end
     
+    // MOSI output: always driven from MSB of tx_shift register
+    // When idle, tx_shift = 0, so MOSI = 0 (safe idle state)
     assign mosi = tx_shift[7];
     assign busy = (state != IDLE);
     
