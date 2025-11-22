@@ -168,6 +168,98 @@ CS          ←     GPIO Pin (e.g., Pin 14) → mcu_cs_n
 GND         →     GND
 ```
 
+---
+
+## Pull-Up/Pull-Down Requirements
+
+### **Critical: External Pull-Up Resistors Required**
+
+#### **1. CS_N (Chip Select) - REQUIRES PULL-UP**
+- **Signal**: `cs_n1`, `cs_n2`, `mcu_cs_n`
+- **Idle State**: HIGH (1) - inactive
+- **Active State**: LOW (0) - active
+- **Requirement**: **10kΩ pull-up resistor to 3.3V**
+- **Why**: CS must stay HIGH when FPGA is not driving it (during power-up, reset, or when idle). Without pull-up, CS may float LOW and accidentally select the slave device.
+- **Connection**: 
+  ```
+  CS_N pin → 10kΩ resistor → 3.3V
+  ```
+
+#### **2. RST_N (Reset) - REQUIRES PULL-UP**
+- **Signal**: `rst_n`
+- **Idle State**: HIGH (1) - system running
+- **Active State**: LOW (0) - system reset
+- **Requirement**: **10kΩ pull-up resistor to 3.3V**
+- **Why**: Reset must stay HIGH during normal operation. Button pulls to GND when pressed.
+- **Connection**: 
+  ```
+  RST_N pin → 10kΩ resistor → 3.3V
+  RST_N pin → Button → GND (when pressed)
+  ```
+
+#### **3. MOSI (Master Out) - NO PULL-UP/PULL-DOWN NEEDED**
+- **Signal**: `mosi1`, `mosi2`, `mcu_mosi`
+- **Idle State**: LOW (0) for MCU SPI, driven by FPGA for BNO085
+- **Requirement**: **No external resistor needed**
+- **Why**: MOSI is always driven by FPGA (output). FPGA controls the signal state.
+
+#### **4. SCLK (SPI Clock) - NO PULL-UP/PULL-DOWN NEEDED**
+- **Signal**: `sclk1`, `sclk2`, `mcu_sclk`
+- **Idle State**: 
+  - BNO085 SPI: HIGH (CPOL=1)
+  - MCU SPI: LOW (CPOL=0)
+- **Requirement**: **No external resistor needed**
+- **Why**: SCLK is always driven by FPGA (output). FPGA controls the clock state.
+
+#### **5. CLK (System Clock) - NO PULL-UP/PULL-DOWN NEEDED**
+- **Signal**: `clk`
+- **Requirement**: **No external resistor needed**
+- **Why**: Clock is driven by oscillator/crystal. Always has a defined state.
+
+#### **6. MISO (Master In) - OPTIONAL PULL-UP**
+- **Signal**: `miso1`, `miso2`, `mcu_miso`
+- **Requirement**: **Optional 10kΩ pull-up to 3.3V** (recommended for reliability)
+- **Why**: MISO is an input to FPGA. Pull-up ensures a defined state when slave is not driving (though most SPI slaves drive MISO actively).
+
+### **Summary Table**
+
+| Signal | Type | Idle State | Pull-Up/Pull-Down | Value |
+|--------|------|------------|-------------------|-------|
+| `cs_n1`, `cs_n2`, `mcu_cs_n` | Output | HIGH | **Pull-Up Required** | 10kΩ to 3.3V |
+| `rst_n` | Input | HIGH | **Pull-Up Required** | 10kΩ to 3.3V |
+| `mosi1`, `mosi2`, `mcu_mosi` | Output | LOW/HIGH | None | Always driven |
+| `sclk1`, `sclk2`, `mcu_sclk` | Output | LOW/HIGH | None | Always driven |
+| `clk` | Input | N/A | None | Driven by oscillator |
+| `miso1`, `miso2`, `mcu_miso` | Input | N/A | Optional Pull-Up | 10kΩ to 3.3V (recommended) |
+
+### **Wiring with Pull-Up Resistors**
+
+```
+FPGA Pin → 10kΩ Resistor → 3.3V
+         ↓
+    (Signal line)
+         ↓
+    Connected Device
+```
+
+**Example for CS_N:**
+```
+FPGA Pin (cs_n1) → 10kΩ → 3.3V
+                 ↓
+            (SPI bus)
+                 ↓
+            BNO085 CS pin
+```
+
+**Example for RST_N:**
+```
+FPGA Pin (rst_n) → 10kΩ → 3.3V
+                 ↓
+            (Reset line)
+                 ↓
+            Button → GND (when pressed)
+```
+
 #### **Calibration Button**
 ```
 Button            FPGA
