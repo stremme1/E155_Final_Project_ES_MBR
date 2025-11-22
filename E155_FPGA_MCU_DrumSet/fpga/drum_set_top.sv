@@ -1,16 +1,12 @@
 // Top-level module for BNO085-based Drum Set Gesture Detection System
 // Integrates SPI communication, sensor control, quaternion processing, and gesture detection
 //
-// NOTE: This module expects clk as an input.
-// For HARDWARE: Use drum_set_top_wrapper.sv which includes HSOSC clock generation
-// For SIMULATION: Testbenches should generate their own clock (HSOSC cannot be simulated)
-//
-// Clock Requirements:
-// - Hardware: Use HSOSC (internal oscillator) via wrapper module
-// - Simulation: Generate clock in testbench (see tb_*.sv files)
+// CLOCK CONFIGURATION:
+// - HARDWARE: Uses HSOSC (internal oscillator) - uncomment HSOSC section below
+// - SIMULATION: Generate clock in testbench (HSOSC cannot be simulated) - comment out HSOSC section
 
 module drum_set_top (
-    input  logic        clk,           // System clock (from HSOSC in hardware, from testbench in simulation)
+    // Note: clk is generated internally by HSOSC for hardware, or from testbench for simulation
     input  logic        rst_n,         // Active-low reset
     
     // BNO085 Sensor 1 (Right Hand) - SPI Interface
@@ -73,6 +69,37 @@ module drum_set_top (
     
     // Yaw offsets for calibration
     logic signed [15:0] yaw_offset1, yaw_offset2;
+    
+    // ============================================
+    // CLOCK GENERATION
+    // ============================================
+    
+    // Internal clock signal
+    logic clk;
+    
+    // HARDWARE CLOCK - HSOSC (ACTIVE FOR HARDWARE)
+    // CLKHF_DIV(2'b11) = divide by 16 to get 3MHz from 48MHz
+    // For 48MHz HSOSC: divide by 16 = 3MHz (suitable for SPI)
+    // For different frequencies, adjust CLKHF_DIV:
+    //   2'b00 = divide by 2
+    //   2'b01 = divide by 4  
+    //   2'b10 = divide by 8
+    //   2'b11 = divide by 16
+    
+    HSOSC #(.CLKHF_DIV(2'b11)) hf_osc (
+        .CLKHFPU(1'b1),   // Power up
+        .CLKHFEN(1'b1),   // Enable
+        .CLKHF(clk)       // Output clock (3MHz from 48MHz / 16)
+    );
+    
+    // SIMULATION CLOCK - UNCOMMENT FOR SIMULATION
+    // Comment out HSOSC above and uncomment this section for testbenches
+    /*
+    initial begin
+        clk = 0;
+        forever #10000 clk = ~clk; // 50kHz clock (20us period) - MUCH SLOWER for Questa
+    end
+    */
     
     // ============================================
     // Sensor 1 (Right Hand) - BNO085
