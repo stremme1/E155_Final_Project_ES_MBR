@@ -245,6 +245,9 @@ module tb_calibration;
         
         // Test 6: Recalibration
         $display("=== Test 6: Recalibration ===");
+        // Wait for calib_active to clear first (button must be released)
+        while (calib_active) #(CLK_PERIOD);
+        #(CLK_PERIOD * 1000);
         // Send data and keep it valid while pressing button
         yaw1 = 16'd120;
         yaw2 = 16'd60;
@@ -258,11 +261,15 @@ module tb_calibration;
         gyro2_z = 16'd0;
         data_valid_1 = 1;
         data_valid_2 = 1;
-        #(CLK_PERIOD * 10);
+        #(CLK_PERIOD * 100);  // Wait for data to be registered
         $display("Recalibrating at yaw1=120, yaw2=60...");
+        $display("  Previous offsets: offset1=%0d, offset2=%0d", 
+                 dut.yaw_offset1_reg, dut.yaw_offset2_reg);
         calib_button = 1;
         #(CLK_PERIOD * 2500000);  // Hold for debounce period (50ms)
+        #(CLK_PERIOD * 100);  // Keep data_valid high a bit more
         calib_button = 0;
+        #(CLK_PERIOD * 2000);  // Wait for calib_active to clear
         data_valid_1 = 0;
         data_valid_2 = 0;
         #(CLK_PERIOD * 1000);
@@ -274,17 +281,21 @@ module tb_calibration;
         if (dut.yaw_offset1_reg == 16'd120 && dut.yaw_offset2_reg == 16'd60) begin
             $display("PASS: Recalibration successful\n");
         end else begin
-            $display("FAIL: Recalibration failed\n");
+            $display("FAIL: Recalibration failed (expected 120/60, got %0d/%0d)\n",
+                     dut.yaw_offset1_reg, dut.yaw_offset2_reg);
         end
         
         // Test 7: Calibration requires valid data
         $display("=== Test 7: Calibration Requires Valid Data ===");
+        // Wait for calib_active to clear
+        #(CLK_PERIOD * 2000);
         data_valid_1 = 0;
         data_valid_2 = 0;
         yaw1 = 16'd200;
         yaw2 = 16'd250;
-        #(CLK_PERIOD * 10);
+        #(CLK_PERIOD * 100);
         $display("Pressing button without valid data...");
+        $display("  data_valid_1=%b, data_valid_2=%b", data_valid_1, data_valid_2);
         calib_button = 1;
         #(CLK_PERIOD * 2500000);  // Hold for debounce period
         calib_button = 0;
