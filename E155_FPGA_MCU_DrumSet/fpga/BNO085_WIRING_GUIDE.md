@@ -22,18 +22,20 @@ SPI Pin Functions (from Adafruit BNO085 Datasheet):
 - ADR:  I2C Address pin (not used in SPI mode)
 ```
 
+## BNO085 Sensor 1 (Right Hand)
+
 **Hardware Wiring:**
 ```
 BNO085-1 Pin    →    FPGA Pin    →    FPGA Signal Name
 ─────────────────────────────────────────────────────
-SCL (SCK)       →    P20   →    sclk1 (SPI clock)
-DI (MOSI)       →    P13   →    mosi1 (FPGA sends data)
-SDA (MISO)      →    P12   →    miso1 (sensor sends data)
-CS              →    P18   →    cs_n1 (chip select, with 10kΩ pull-up)
+SCL (SCK)       →    P20          →    sclk1 (SPI clock)
+DI (MOSI)       →    P13          →    mosi1 (FPGA sends data)
+SDA (MISO)      →    P12          →    miso1 (sensor sends data)
+CS              →    P18          →    cs_n1 (chip select, with 10kΩ pull-up)
 INT             →    (unconnected) →  Not used (polling mode)
-RST             →    3.3V        →    Reset (keep HIGH, active LOW)
-VIN             →    3.3V or 5V  →    Power supply
-GND             →    GND         →    Ground (common)
+RST             →    3.3V         →    Reset (keep HIGH, active LOW)
+VIN             →    3.3V or 5V   →    Power supply
+GND             →    GND          →    Ground (common)
 ADR             →    (unconnected) →  Not used (SPI mode)
 ```
 
@@ -45,20 +47,21 @@ ADR             →    (unconnected) →  Not used (SPI mode)
 
 ---
 
+## BNO085 Sensor 2 (Left Hand)
 
 **Hardware Wiring:**
 ```
 BNO085-2 Pin    →    FPGA Pin    →    FPGA Signal Name
 ─────────────────────────────────────────────────────
-SCL (SCK)       →    P4   →    sclk2 (SPI clock)
-DI (MOSI)       →    P47   →    mosi2 (FPGA sends data)
-SDA (MISO)      →    P6   →    miso2 (sensor sends data)
-CS              →    P48   →    cs_n2 (chip select, with 10kΩ pull-up)
-INT             →    (unconnected)      →    Not used (polling mode)
-RST             →    3.3V               →    Reset (keep HIGH, active LOW)
-VIN             →    3.3V or 5V         →    Power supply
-GND             →    GND                →    Ground (common)
-ADR             →    (unconnected)      →    Not used (SPI mode)
+SCL (SCK)       →    P4           →    sclk2 (SPI clock)
+DI (MOSI)       →    P47          →    mosi2 (FPGA sends data)
+SDA (MISO)      →    P6           →    miso2 (sensor sends data)
+CS              →    P48          →    cs_n2 (chip select, with 10kΩ pull-up)
+INT             →    (unconnected) →    Not used (polling mode)
+RST             →    3.3V         →    Reset (keep HIGH, active LOW)
+VIN             →    3.3V or 5V   →    Power supply
+GND             →    GND          →    Ground (common)
+ADR             →    (unconnected) →    Not used (SPI mode)
 ```
 
 **Important Notes:**
@@ -66,6 +69,4 @@ ADR             →    (unconnected)      →    Not used (SPI mode)
 - **SDA** on BNO085 = **MISO** (data FROM sensor TO FPGA)
 - **DI** and **SDA** are BNO085 pin names, NOT FPGA pin names
 - Your FPGA pins (SDA, INT, etc.) are used for the MISO connection
-
----
 
