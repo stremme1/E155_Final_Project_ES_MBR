@@ -244,6 +244,8 @@ module drum_set_top (
     );
     
     // Capture yaw offsets during calibration
+    // Note: calib_button is used here indirectly via calib_active from gesture_detector
+    // This ensures calib_button is recognized as used (similar to kick_button usage above)
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             yaw_offset1 <= 16'd0;
@@ -251,6 +253,17 @@ module drum_set_top (
         end else if (calib_active && euler1_valid && euler2_valid) begin
             yaw_offset1 <= yaw1;
             yaw_offset2 <= yaw2;
+        end
+    end
+    
+    // Explicit use of calib_button in top-level to ensure Radiant recognizes it
+    // This prevents optimization and ensures pin assignment is available
+    logic calib_button_sync_top;  // Top-level synchronization (additional to gesture_detector's sync)
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            calib_button_sync_top <= 1'b0;
+        end else begin
+            calib_button_sync_top <= calib_button;  // Direct use in top-level
         end
     end
     
