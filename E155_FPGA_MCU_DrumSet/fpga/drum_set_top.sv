@@ -258,14 +258,19 @@ module drum_set_top (
     
     // Explicit use of calib_button in top-level to ensure Radiant recognizes it
     // This prevents optimization and ensures pin assignment is available
-    logic calib_button_sync_top;  // Top-level synchronization (additional to gesture_detector's sync)
+    // Match the pattern used for kick_button (sequential + combinational usage)
+    logic calib_button_prev_top;
+    logic calib_button_edge_top;
+    
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            calib_button_sync_top <= 1'b0;
+            calib_button_prev_top <= 1'b0;
         end else begin
-            calib_button_sync_top <= calib_button;  // Direct use in top-level
+            calib_button_prev_top <= calib_button;  // Direct use in sequential logic
         end
     end
+    
+    assign calib_button_edge_top = calib_button && !calib_button_prev_top;  // Direct use in combinational logic
     
     // ============================================
     // SPI Output to MCU
@@ -323,6 +328,12 @@ module drum_set_top (
     
     assign led_initialized = bno1_initialized && bno2_initialized;
     assign led_error = bno1_error || bno2_error;
+    
+    // Use calib_button_edge_top to ensure calib_button is recognized (similar to kick_button_edge)
+    // This signal is monitored but doesn't affect functionality - gesture_detector handles actual calibration
+    // The edge detection here ensures Radiant sees calib_button used in both sequential and combinational logic
+    // Note: calib_button_edge_top is not used in logic, but its computation ensures calib_button is not optimized away
+    // This matches the pattern for kick_button which works correctly
     
 endmodule
 
