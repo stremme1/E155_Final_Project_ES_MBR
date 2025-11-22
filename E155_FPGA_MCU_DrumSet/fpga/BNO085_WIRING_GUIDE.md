@@ -10,16 +10,20 @@ BNO085 Breakout Board Pinout:
 │  SDA  SCL  ADR  │
 └─────────────────┘
 
-Pin Functions:
-- VIN:  Power (3.3V or 5V)
-- GND:  Ground
-- SCL:  SPI Clock (also called SCK)
-- SDA:  SPI Master Out (MOSI)
-- SDO:  SPI Master In (MISO)
-- CS:   Chip Select (active low)
-- INT:  Interrupt (optional, not used)
-- RST:  Reset (optional, tie to 3.3V or leave floating)
-- ADR:  I2C Address (not used in SPI mode)
+Pin Functions (BNO085 Breakout Board):
+- VIN:  Power (3.3V or 5V) → Connect to 3.3V
+- GND:  Ground → Connect to GND
+- SCL:  SPI Clock (also called SCK) → Connect to FPGA sclk1/sclk2 pin
+- SDA:  SPI Master Out (MOSI) → Connect to FPGA mosi1/mosi2 pin
+- SDO:  SPI Master In (MISO) → Connect to FPGA miso1/miso2 pin
+- CS:   Chip Select (active low) → Connect to FPGA cs_n1/cs_n2 pin
+- INT:  Interrupt (optional, not used) → Leave unconnected
+- RST:  Reset (optional) → Tie to 3.3V or leave floating
+- ADR:  I2C Address (not used in SPI mode) → Leave unconnected
+
+Note: SDO on BNO085 = MISO (Master In, Slave Out)
+      This is the pin that sends data FROM sensor TO FPGA
+      Connect to your FPGA's MISO input pin (DI, P13, etc.)
 ```
 
 ## Wiring Format
@@ -28,10 +32,11 @@ Pin Functions:
 
 | BNO085 Pin | Function | FPGA Signal | Pin Options | Notes |
 |------------|----------|-------------|-------------|-------|
-| **SCL** | SPI Clock | `sclk1` | P0, P20 | Output from FPGA |
-| **SDA** | SPI MOSI | `mosi1` | P1, P12 | Output from FPGA |
-| **SDO** | SPI MISO | `miso1` | DI, P13 | Input to FPGA |
-| **CS** | Chip Select | `cs_n1` | CS, P18 | Output from FPGA (needs 10kΩ pull-up) |
+| **SCL** | SPI Clock | `sclk1` | P20 | Output from FPGA |
+| **SDA** | SPI MOSI | `mosi1` |  P12 | Output from FPGA |
+| **SDO** | SPI MISO | `miso1` | DI, P13 | Input to FPGA | Not an postion 
+| **CS** | Chip Select | `cs_n1` | P18 | Output from FPGA (needs 10kΩ pull-up) |
+
 | **VIN** | Power | - | 3.3V | Power supply |
 | **GND** | Ground | - | GND | Ground connection |
 | **RST** | Reset | - | 3.3V or floating | Optional (tie high) |
@@ -49,18 +54,24 @@ set_io cs_n1   CS              # Or P18
 
 **Hardware Wiring:**
 ```
-BNO085-1 Pin    →    FPGA Pin    →    Signal Name
-─────────────────────────────────────────────────
-SCL (SCK)       →    P0 or P20   →    sclk1
-SDA (MOSI)      →    P1 or P12   →    mosi1
-SDO (MISO)      →    DI or P13   →    miso1
-CS              →    CS or P18   →    cs_n1 (with 10kΩ pull-up to 3.3V)
-VIN             →    3.3V        →    Power
-GND             →    GND         →    Ground
+BNO085-1 Pin    →    FPGA Pin    →    FPGA Signal Name
+──────────────────────────────────────────────────────
+SCL (SCK)       →    P0 or P20   →    sclk1 (output)
+SDA (MOSI)      →    P1 or P12   →    mosi1 (output)
+SDO (MISO)      →    DI or P13   →    miso1 (input)
+CS              →    CS or P18   →    cs_n1 (output, with 10kΩ pull-up)
+VIN             →    3.3V        →    Power supply
+GND             →    GND         →    Ground (common)
 RST             →    3.3V        →    Reset (tie high)
-INT             →    (unconnected)
-ADR             →    (unconnected)
+INT             →    (unconnected) →   Not used
+ADR             →    (unconnected) →  Not used (SPI mode)
 ```
+
+**Important**: 
+- **SDO** on BNO085 breakout = **MISO** (data FROM sensor TO FPGA)
+- Connect BNO085 **SDO** pin → FPGA **MISO input** pin (DI, P13, etc.)
+- This is NOT a position/pin name on your FPGA - it's the BNO085 pin name
+- Your FPGA receives this data on its MISO input pin
 
 ---
 
@@ -121,6 +132,12 @@ MOSI2:  SDA, P3,  P14
 MISO2:  INT, P4,  P15
 CS2:    3BO, P5,  P19
 ```
+
+**Note**: 
+- BNO085 **SDO** pin connects to FPGA **MISO2** input
+- BNO085 **SDA** pin connects to FPGA **MOSI2** output
+- BNO085 **SCL** pin connects to FPGA **SCLK2** output
+- BNO085 **CS** pin connects to FPGA **CS2** output
 
 ---
 
