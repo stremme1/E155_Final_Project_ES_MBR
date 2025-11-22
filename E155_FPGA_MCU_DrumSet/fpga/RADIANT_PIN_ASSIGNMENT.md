@@ -1,0 +1,226 @@
+# Radiant Pin Assignment Guide
+
+## How to Assign Pins in Lattice Radiant
+
+### Method 1: Using Constraints File (.pcf)
+
+1. **Create or edit** `constraints.pcf` in your Radiant project
+2. **Add pin assignments** using this syntax:
+   ```
+   set_io <signal_name> <pin_name>
+   ```
+
+### Method 2: Using Radiant GUI
+
+1. **Open Radiant** → Your Project
+2. **Go to**: File → New → Constraint File → Physical Constraints
+3. **Or**: Right-click project → Add File → Constraint File
+4. **In the constraints editor**, add pin assignments
+
+---
+
+## Pin Mapping for Your Board
+
+Based on your available pins: `BT, P0, P1, Reset, DI, CS, VIN, 3BO, Ground, SCL, SDA, INT`
+
+### Required Signals from `drum_set_top.sv`:
+
+```
+Inputs:
+- clk (system clock)
+- rst_n (reset)
+- miso1, miso2 (from BNO085 sensors)
+- calib_button (calibration button)
+- kick_button (optional)
+
+Outputs:
+- sclk1, sclk2 (SPI clocks to BNO085)
+- mosi1, mosi2 (SPI MOSI to BNO085)
+- cs_n1, cs_n2 (chip selects to BNO085)
+- mcu_sclk, mcu_mosi, mcu_cs_n (SPI to MCU)
+- led_initialized, led_error (status LEDs)
+```
+
+---
+
+## Suggested Pin Assignment
+
+### System Signals
+```
+set_io clk     <clock_pin>     # System clock (check your board docs)
+set_io rst_n   Reset           # Reset button (active low)
+```
+
+### BNO085 Sensor 1 (Right Hand)
+```
+set_io sclk1   P0              # SPI clock to Sensor 1
+set_io mosi1   P1              # SPI MOSI to Sensor 1
+set_io miso1   DI              # SPI MISO from Sensor 1
+set_io cs_n1   CS              # Chip select to Sensor 1
+```
+
+### BNO085 Sensor 2 (Left Hand)
+```
+set_io sclk2   SCL             # SPI clock to Sensor 2 (reusing SCL pin)
+set_io mosi2   SDA             # SPI MOSI to Sensor 2 (reusing SDA pin)
+set_io miso2   INT             # SPI MISO from Sensor 2 (reusing INT pin)
+set_io cs_n2   <available_pin> # Chip select to Sensor 2 (need another pin)
+```
+
+### User Interface
+```
+set_io calib_button  BT        # Calibration button
+set_io kick_button  <pin>     # Kick button (optional, if you have extra pin)
+```
+
+### MCU SPI Communication
+```
+set_io mcu_sclk      <pin>     # SPI clock to MCU
+set_io mcu_mosi      <pin>     # SPI MOSI to MCU
+set_io mcu_cs_n      <pin>     # Chip select to MCU
+```
+
+### Status LEDs (Optional)
+```
+set_io led_initialized <pin>   # Initialization LED
+set_io led_error       <pin>   # Error LED
+```
+
+---
+
+## Complete Example Constraints File
+
+Create `constraints.pcf`:
+
+```pcf
+# System Clock and Reset
+set_io clk     <your_clock_pin>   # Check board documentation
+set_io rst_n   Reset               # Reset button
+
+# BNO085 Sensor 1 (Right Hand)
+set_io sclk1   P0                  # SPI clock
+set_io mosi1   P1                  # SPI MOSI
+set_io miso1   DI                  # SPI MISO
+set_io cs_n1   CS                  # Chip select
+
+# BNO085 Sensor 2 (Left Hand)
+# Note: You may need additional pins - check if SCL/SDA/INT can be reused
+set_io sclk2   SCL                 # SPI clock (if available)
+set_io mosi2   SDA                 # SPI MOSI (if available)
+set_io miso2   INT                 # SPI MISO (if available)
+set_io cs_n2   <pin>               # Chip select (need another pin)
+
+# User Interface
+set_io calib_button  BT            # Calibration button
+# set_io kick_button  <pin>        # Optional kick button
+
+# MCU SPI Communication
+set_io mcu_sclk      <pin>         # SPI clock to MCU
+set_io mcu_mosi      <pin>         # SPI MOSI to MCU
+set_io mcu_cs_n      <pin>         # Chip select to MCU
+
+# Status LEDs (Optional)
+# set_io led_initialized <pin>      # Optional LED
+# set_io led_error       <pin>      # Optional LED
+```
+
+---
+
+## Important Notes
+
+### 1. Pin Availability
+You listed these pins: `BT, P0, P1, Reset, DI, CS, VIN, 3BO, Ground, SCL, SDA, INT`
+
+**You may not have enough pins** for all signals. Priority:
+
+**Critical (Must Have):**
+- `clk`, `rst_n` - System signals
+- `sclk1`, `mosi1`, `miso1`, `cs_n1` - Sensor 1 (4 pins)
+- `sclk2`, `mosi2`, `miso2`, `cs_n2` - Sensor 2 (4 pins)
+- `calib_button` - Calibration (1 pin)
+- `mcu_sclk`, `mcu_mosi`, `mcu_cs_n` - MCU SPI (3 pins)
+
+**Total: ~15 pins needed**
+
+### 2. Pin Reuse
+- `SCL`, `SDA`, `INT` are typically I2C/interrupt pins
+- If your board supports it, you can use them as GPIO for SPI
+- Check your board documentation to confirm
+
+### 3. Missing Pins
+If you don't have enough pins, you may need to:
+- Use a different FPGA board with more GPIO
+- Use a pin expansion board
+- Check if your board has more pins not listed
+
+### 4. VIN and Ground
+- `VIN` - Power input (not a GPIO pin)
+- `Ground` - Ground connection (not a GPIO pin)
+- These are for power, not signal routing
+
+---
+
+## Step-by-Step in Radiant
+
+### 1. Create Constraints File
+1. In Radiant: **File** → **New** → **Constraint File** → **Physical Constraints**
+2. Name it: `constraints.pcf`
+3. Click **OK**
+
+### 2. Add Pin Assignments
+1. Open the constraints file
+2. Add lines like: `set_io signal_name pin_name`
+3. Save the file
+
+### 3. Verify Pin Assignments
+1. **Run Synthesis**
+2. Check **Pin Assignment Report** (should show all signals assigned)
+3. If warnings appear, fix pin assignments
+
+### 4. Check Pin Types
+Make sure pin types match:
+- **Input signals** → Input-capable pins
+- **Output signals** → Output-capable pins
+- **Clock signals** → Clock-capable pins (for `clk`)
+
+---
+
+## Alternative: Check Your Board Documentation
+
+Your board might have:
+- More GPIO pins (P2, P3, etc.)
+- Dedicated SPI pins
+- Pin expansion headers
+
+**Check your FPGA board's pinout diagram** for all available pins!
+
+---
+
+## Quick Reference: Signal Types
+
+| Signal | Type | Direction | Notes |
+|--------|------|-----------|-------|
+| `clk` | Input | → FPGA | System clock (needs clock-capable pin) |
+| `rst_n` | Input | → FPGA | Reset (active low) |
+| `sclk1`, `sclk2` | Output | FPGA → | SPI clocks |
+| `mosi1`, `mosi2` | Output | FPGA → | SPI MOSI |
+| `miso1`, `miso2` | Input | → FPGA | SPI MISO |
+| `cs_n1`, `cs_n2` | Output | FPGA → | Chip selects (need pull-ups) |
+| `calib_button` | Input | → FPGA | Button (needs pull-up) |
+| `mcu_sclk` | Output | FPGA → | MCU SPI clock |
+| `mcu_mosi` | Output | FPGA → | MCU SPI MOSI |
+| `mcu_cs_n` | Output | FPGA → | MCU chip select (needs pull-up) |
+
+---
+
+## Need More Pins?
+
+If you're short on pins, consider:
+1. **Check board documentation** for additional GPIO pins
+2. **Use pin expansion** (if available)
+3. **Prioritize signals**:
+   - Must have: Sensors, MCU SPI, Calibration button
+   - Optional: LEDs, Kick button
+
+Good luck with your pin assignment! 🎯
+
