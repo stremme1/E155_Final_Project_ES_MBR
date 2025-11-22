@@ -43,15 +43,19 @@ Outputs:
 
 ---
 
-## Suggested Pin Assignment
+## Suggested Pin Assignment for Your Board
+
+Based on your available pins: `BT, P0, P1, Reset, DI, CS, VIN, 3BO, Ground, SCL, SDA, INT`
+
+**Note**: VIN and Ground are power pins (not GPIO), so you have ~10 GPIO pins available.
 
 ### System Signals
 ```
-set_io clk     <clock_pin>     # System clock (check your board docs)
+set_io clk     <clock_pin>     # System clock - CHECK YOUR BOARD DOCS!
 set_io rst_n   Reset           # Reset button (active low)
 ```
 
-### BNO085 Sensor 1 (Right Hand)
+### BNO085 Sensor 1 (Right Hand) - 4 pins
 ```
 set_io sclk1   P0              # SPI clock to Sensor 1
 set_io mosi1   P1              # SPI MOSI to Sensor 1
@@ -59,32 +63,50 @@ set_io miso1   DI              # SPI MISO from Sensor 1
 set_io cs_n1   CS              # Chip select to Sensor 1
 ```
 
-### BNO085 Sensor 2 (Left Hand)
+### BNO085 Sensor 2 (Left Hand) - 4 pins
 ```
-set_io sclk2   SCL             # SPI clock to Sensor 2 (reusing SCL pin)
-set_io mosi2   SDA             # SPI MOSI to Sensor 2 (reusing SDA pin)
-set_io miso2   INT             # SPI MISO from Sensor 2 (reusing INT pin)
-set_io cs_n2   <available_pin> # Chip select to Sensor 2 (need another pin)
+# Check if SCL/SDA/INT can be used as GPIO (may be I2C-only pins)
+set_io sclk2   SCL             # SPI clock to Sensor 2 (if GPIO-capable)
+set_io mosi2   SDA             # SPI MOSI to Sensor 2 (if GPIO-capable)
+set_io miso2   INT             # SPI MISO from Sensor 2 (if GPIO-capable)
+set_io cs_n2   3BO             # Chip select to Sensor 2 (if GPIO-capable)
 ```
 
-### User Interface
+### User Interface - 1 pin
 ```
 set_io calib_button  BT        # Calibration button
-set_io kick_button  <pin>     # Kick button (optional, if you have extra pin)
+# set_io kick_button  <pin>    # Kick button (optional - need extra pin)
 ```
 
-### MCU SPI Communication
+### MCU SPI Communication - 3 pins NEEDED
 ```
-set_io mcu_sclk      <pin>     # SPI clock to MCU
-set_io mcu_mosi      <pin>     # SPI MOSI to MCU
-set_io mcu_cs_n      <pin>     # Chip select to MCU
+# WARNING: You need 3 more pins for MCU SPI!
+# Check your board for additional GPIO pins (P2, P3, P4, etc.)
+set_io mcu_sclk      <pin>     # SPI clock to MCU (need pin)
+set_io mcu_mosi      <pin>     # SPI MOSI to MCU (need pin)
+set_io mcu_cs_n      <pin>     # Chip select to MCU (need pin)
 ```
 
-### Status LEDs (Optional)
+### Status LEDs (Optional) - 2 pins
 ```
-set_io led_initialized <pin>   # Initialization LED
-set_io led_error       <pin>   # Error LED
+# set_io led_initialized <pin>  # Optional LED (need pin)
+# set_io led_error       <pin>  # Optional LED (need pin)
 ```
+
+### ⚠️ PIN SHORTAGE WARNING
+You have ~10 GPIO pins but need ~14 pins minimum:
+- System: 2 pins (clk, rst_n)
+- Sensor 1: 4 pins
+- Sensor 2: 4 pins  
+- Calibration: 1 pin
+- MCU SPI: 3 pins
+- **Total: 14 pins needed**
+
+**Solutions:**
+1. Check your board documentation for additional GPIO pins (P2, P3, P4, etc.)
+2. Verify if SCL/SDA/INT can be used as GPIO (not just I2C)
+3. Consider using a board with more GPIO pins
+4. Temporarily skip optional features (LEDs, kick button)
 
 ---
 
