@@ -57,7 +57,6 @@ module gesture_detector (
     logic calib_button_prev;
     logic [31:0] debounce_counter;
     logic calib_button_debounced;
-    logic signed [15:0] yaw_offset1_reg, yaw_offset2_reg;
     
     // Normalize yaw to 0-360 range
     function logic signed [15:0] normalize_yaw(logic signed [15:0] yaw_in);
@@ -110,25 +109,22 @@ module gesture_detector (
         if (!rst_n) begin
             yaw1_norm <= 16'd0;
             yaw2_norm <= 16'd0;
-            yaw_offset1_reg <= 16'd0;
-            yaw_offset2_reg <= 16'd0;
             calib_active <= 1'b0;
         end else begin
-            // Calibration: capture current yaw values when button pressed (rising edge)
+            // Calibration: detect button press (rising edge) and signal to top level
+            // Top level will capture yaw values and pass them back as yaw_offset1/yaw_offset2
             if (calib_button_debounced && !calib_button_prev && data_valid_1 && data_valid_2) begin
-                yaw_offset1_reg <= yaw1;
-                yaw_offset2_reg <= yaw2;
                 calib_active <= 1'b1;
             end else if (!calib_button_debounced) begin
                 calib_active <= 1'b0;
             end
             
-            // Normalize yaw values
+            // Normalize yaw values using input offsets (captured by top level)
             if (data_valid_1) begin
-                yaw1_norm <= normalize_yaw(yaw1 - yaw_offset1_reg);
+                yaw1_norm <= normalize_yaw(yaw1 - yaw_offset1);
             end
             if (data_valid_2) begin
-                yaw2_norm <= normalize_yaw(yaw2 - yaw_offset2_reg);
+                yaw2_norm <= normalize_yaw(yaw2 - yaw_offset2);
             end
         end
     end

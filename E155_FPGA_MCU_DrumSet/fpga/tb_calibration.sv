@@ -146,10 +146,10 @@ module tb_calibration;
         #(CLK_PERIOD * 100);
         $display("Yaw1=%0d, Yaw2=%0d (raw values)", yaw1, yaw2);
         $display("Yaw offsets should be 0: offset1=%0d, offset2=%0d", 
-                 dut.yaw_offset1_reg, dut.yaw_offset2_reg);
+                 yaw_offset1, yaw_offset2);
         $display("Normalized yaw should equal raw: yaw1_norm=%0d, yaw2_norm=%0d",
                  dut.yaw1_norm, dut.yaw2_norm);
-        if (dut.yaw_offset1_reg == 0 && dut.yaw_offset2_reg == 0) begin
+        if (yaw_offset1 == 0 && yaw_offset2 == 0) begin
             $display("PASS: Initial offsets are zero\n");
         end else begin
             $display("FAIL: Initial offsets not zero\n");
@@ -187,11 +187,10 @@ module tb_calibration;
         $display("Checking captured offsets...");
         $display("  Expected: offset1=45, offset2=315");
         $display("  Actual:   offset1=%0d, offset2=%0d", 
-                 dut.yaw_offset1_reg, dut.yaw_offset2_reg);
+                 yaw_offset1, yaw_offset2);
         $display("  Calib active: %b", calib_active);
-        $display("  Testbench offset1: %0d, offset2: %0d", yaw_offset1, yaw_offset2);
         
-        if (dut.yaw_offset1_reg == 16'd45 && dut.yaw_offset2_reg == 16'd315) begin
+        if (yaw_offset1 == 16'd45 && yaw_offset2 == 16'd315) begin
             $display("PASS: Offsets captured correctly\n");
         end else begin
             $display("FAIL: Offsets not captured correctly\n");
@@ -234,10 +233,10 @@ module tb_calibration;
         
         $display("Checking if debounce prevented false triggers...");
         $display("  Offset1 should still be 45 (from previous calibration): %0d", 
-                 dut.yaw_offset1_reg);
+                 yaw_offset1);
         $display("  Offset2 should still be 315 (from previous calibration): %0d",
-                 dut.yaw_offset2_reg);
-        if (dut.yaw_offset1_reg == 16'd45 && dut.yaw_offset2_reg == 16'd315) begin
+                 yaw_offset2);
+        if (yaw_offset1 == 16'd45 && yaw_offset2 == 16'd315) begin
             $display("PASS: Debouncing prevented false trigger\n");
         end else begin
             $display("FAIL: Debouncing may have failed\n");
@@ -264,7 +263,7 @@ module tb_calibration;
         #(CLK_PERIOD * 100);  // Wait for data to be registered
         $display("Recalibrating at yaw1=120, yaw2=60...");
         $display("  Previous offsets: offset1=%0d, offset2=%0d", 
-                 dut.yaw_offset1_reg, dut.yaw_offset2_reg);
+                 yaw_offset1, yaw_offset2);
         calib_button = 1;
         #(CLK_PERIOD * 2500000);  // Hold for debounce period (50ms)
         #(CLK_PERIOD * 100);  // Keep data_valid high a bit more
@@ -277,12 +276,12 @@ module tb_calibration;
         $display("Checking new offsets...");
         $display("  Expected: offset1=120, offset2=60");
         $display("  Actual:   offset1=%0d, offset2=%0d",
-                 dut.yaw_offset1_reg, dut.yaw_offset2_reg);
-        if (dut.yaw_offset1_reg == 16'd120 && dut.yaw_offset2_reg == 16'd60) begin
+                 yaw_offset1, yaw_offset2);
+        if (yaw_offset1 == 16'd120 && yaw_offset2 == 16'd60) begin
             $display("PASS: Recalibration successful\n");
         end else begin
             $display("FAIL: Recalibration failed (expected 120/60, got %0d/%0d)\n",
-                     dut.yaw_offset1_reg, dut.yaw_offset2_reg);
+                     yaw_offset1, yaw_offset2);
         end
         
         // Test 7: Calibration requires valid data
@@ -302,9 +301,9 @@ module tb_calibration;
         #(CLK_PERIOD * 1000);
         
         $display("Checking if offsets changed (should not)...");
-        $display("  Offset1: %0d (should still be 120)", dut.yaw_offset1_reg);
-        $display("  Offset2: %0d (should still be 60)", dut.yaw_offset2_reg);
-        if (dut.yaw_offset1_reg == 16'd120 && dut.yaw_offset2_reg == 16'd60) begin
+        $display("  Offset1: %0d (should still be 120)", yaw_offset1);
+        $display("  Offset2: %0d (should still be 60)", yaw_offset2);
+        if (yaw_offset1 == 16'd120 && yaw_offset2 == 16'd60) begin
             $display("PASS: Calibration correctly requires valid data\n");
         end else begin
             $display("FAIL: Calibration triggered without valid data\n");
@@ -340,7 +339,7 @@ module tb_calibration;
     initial begin
         $monitor("[%0t] calib_button=%b calib_active=%b debounced=%b offset1=%0d offset2=%0d",
                  $time, calib_button, calib_active, dut.calib_button_debounced, 
-                 dut.yaw_offset1_reg, dut.yaw_offset2_reg);
+                 yaw_offset1, yaw_offset2);
     end
 
 endmodule
