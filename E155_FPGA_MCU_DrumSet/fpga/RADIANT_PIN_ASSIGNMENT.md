@@ -227,10 +227,13 @@ Your board might have:
 | `mosi1`, `mosi2` | Output | FPGA → | SPI MOSI |
 | `miso1`, `miso2` | Input | → FPGA | SPI MISO |
 | `cs_n1`, `cs_n2` | Output | FPGA → | Chip selects (need pull-ups) |
-| `calib_button` | Input | → FPGA | Button (needs pull-up) |
+| `calib_button` | Input | → FPGA | Button (needs pull-up, P11) |
+| `kick_button` | Input | → FPGA | Button (needs pull-up, P2) |
 | `mcu_sclk` | Output | FPGA → | MCU SPI clock |
 | `mcu_mosi` | Output | FPGA → | MCU SPI MOSI |
 | `mcu_cs_n` | Output | FPGA → | MCU chip select (needs pull-up) |
+| `led_initialized` | Output | FPGA → | Status LED (P28) |
+| `led_error` | Output | FPGA → | Error LED (P38) |
 
 ---
 
