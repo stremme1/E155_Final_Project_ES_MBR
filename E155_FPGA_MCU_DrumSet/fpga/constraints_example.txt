@@ -1,9 +1,12 @@
 # Complete Pin Assignment Constraints File
 # Copy this to your Radiant project as constraints.pcf
-# Update <clock_pin> with your actual clock pin from board documentation
+#
+# NOTE: If using drum_set_top_wrapper (with HSOSC), DO NOT assign clk to a pin!
+#       The clock is generated internally by HSOSC.
+#       If using drum_set_top directly (external clock), uncomment the clk line below.
 
 # System Clock and Reset
-set_io clk     <clock_pin>   # System clock - CHECK YOUR BOARD DOCS!
+# set_io clk     <clock_pin>   # ONLY if using external clock (not using wrapper)
 set_io rst_n   Reset         # Reset button (active low)
 
 # BNO085 Sensor 1 (Right Hand)
