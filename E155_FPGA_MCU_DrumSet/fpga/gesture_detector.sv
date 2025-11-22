@@ -50,8 +50,13 @@ module gesture_detector (
     logic printed_gyro1_y, printed_gyro2_y;
     logic [15:0] last_gyro1_y, last_gyro2_y;
     
-    // Calibration logic
+    // Calibration logic with debouncing
+    // Debounce parameters: 50ms at 50MHz = 2,500,000 cycles
+    localparam logic [31:0] DEBOUNCE_COUNT = 32'd2_500_000;  // 50ms debounce
+    logic calib_button_sync1, calib_button_sync2;  // Double synchronize
     logic calib_button_prev;
+    logic [31:0] debounce_counter;
+    logic calib_button_debounced;
     logic signed [15:0] yaw_offset1_reg, yaw_offset2_reg;
     
     // Normalize yaw to 0-360 range
@@ -69,6 +74,37 @@ module gesture_detector (
         return yaw_temp;
     endfunction
     
+    // Button synchronization and debouncing
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            calib_button_sync1 <= 1'b0;
+            calib_button_sync2 <= 1'b0;
+            calib_button_prev <= 1'b0;
+            calib_button_debounced <= 1'b0;
+            debounce_counter <= 32'd0;
+        end else begin
+            // Double synchronize asynchronous button signal
+            calib_button_sync1 <= calib_button;
+            calib_button_sync2 <= calib_button_sync1;
+            
+            // Debounce logic
+            if (calib_button_sync2 != calib_button_debounced) begin
+                // Button state changed - start debounce counter
+                debounce_counter <= debounce_counter + 1;
+                if (debounce_counter >= DEBOUNCE_COUNT) begin
+                    // Debounce period elapsed - update debounced signal
+                    calib_button_debounced <= calib_button_sync2;
+                    debounce_counter <= 32'd0;
+                end
+            end else begin
+                // Button state stable - reset counter
+                debounce_counter <= 32'd0;
+            end
+            
+            calib_button_prev <= calib_button_debounced;
+        end
+    end
+    
     // Apply yaw offset and normalize
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -76,17 +112,14 @@ module gesture_detector (
             yaw2_norm <= 16'd0;
             yaw_offset1_reg <= 16'd0;
             yaw_offset2_reg <= 16'd0;
-            calib_button_prev <= 1'b0;
             calib_active <= 1'b0;
         end else begin
-            calib_button_prev <= calib_button;
-            
-            // Calibration: capture current yaw values when button pressed
-            if (calib_button && !calib_button_prev && data_valid_1 && data_valid_2) begin
+            // Calibration: capture current yaw values when button pressed (rising edge)
+            if (calib_button_debounced && !calib_button_prev && data_valid_1 && data_valid_2) begin
                 yaw_offset1_reg <= yaw1;
                 yaw_offset2_reg <= yaw2;
                 calib_active <= 1'b1;
-            end else if (!calib_button) begin
+            end else if (!calib_button_debounced) begin
                 calib_active <= 1'b0;
             end
             
