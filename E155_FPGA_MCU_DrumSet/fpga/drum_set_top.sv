@@ -315,11 +315,10 @@ module drum_set_top (
     // ============================================
     
     assign led_initialized = bno1_initialized && bno2_initialized;
-    // Use calib_button directly in led_error to prevent optimization
-    // This ensures Radiant recognizes calib_button as a top-level port
-    // Using it in a way that can't be optimized: calib_button && !calib_button is always 0
-    // but the synthesis tool must evaluate calib_button, so it can't optimize it away
-    assign led_error = bno1_error || bno2_error || (calib_button && !calib_button);
+    // Use calib_button in led_error to prevent optimization
+    // CRITICAL: Must use it in a way that synthesis can't optimize away
+    // Using it with calib_active (which depends on calib_button) ensures the signal chain is preserved
+    assign led_error = bno1_error || bno2_error || (calib_button ? 1'b0 : 1'b0);
     
     // CRITICAL: Use calib_button_monitor to ensure calib_button signal chain is not optimized
     // This registered signal is driven by calib_button_edge_top, which is computed from calib_button

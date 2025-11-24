@@ -45,8 +45,6 @@ module quaternion_to_euler (
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             valid_stage1 <= 1'b0;
-            valid_stage2 <= 1'b0;
-            valid_stage3 <= 1'b0;
             valid_out <= 1'b0;
             roll <= 16'd0;
             pitch <= 16'd0;
@@ -54,8 +52,7 @@ module quaternion_to_euler (
         end else begin
             // Pipeline valid signal through 4 stages
             valid_stage1 <= valid_in;      // Stage 1: DSP multiplications
-            valid_stage2 <= valid_stage1;  // Stage 2: Intermediate calculations
-            valid_stage3 <= valid_stage2;  // Stage 3: Angle approximations
+            // Note: valid_stage2 and valid_stage3 are driven in their respective always_ff blocks below
             valid_out <= valid_stage3;     // Stage 4: Final conversion
             
             if (valid_in) begin
