@@ -315,10 +315,11 @@ module drum_set_top (
     // ============================================
     
     assign led_initialized = bno1_initialized && bno2_initialized;
-    // Use calib_button in led_error to prevent optimization
+    // Use calib_button and calib_active in led_error to prevent optimization
     // CRITICAL: Must use it in a way that synthesis can't optimize away
-    // Using it with calib_active (which depends on calib_button) ensures the signal chain is preserved
-    assign led_error = bno1_error || bno2_error || (calib_button ? 1'b0 : 1'b0);
+    // Using both calib_button and calib_active (which depends on calib_button) ensures the entire signal chain is preserved
+    // The expressions always evaluate to 0 but require both signals to be evaluated, preventing optimization
+    assign led_error = bno1_error || bno2_error || (calib_button ? 1'b0 : 1'b0) || (calib_active ? 1'b0 : 1'b0);
     
     // CRITICAL: Use calib_button_monitor to ensure calib_button signal chain is not optimized
     // This registered signal is driven by calib_button_edge_top, which is computed from calib_button
