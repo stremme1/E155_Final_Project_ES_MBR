@@ -25,7 +25,8 @@ module tb_system_with_sim_imu;
     logic calib_button, kick_button;
     
     // SPI output to MCU
-    logic mcu_sclk, mcu_mosi, mcu_miso, mcu_cs_n;
+    logic mcu_sclk, mcu_mosi, mcu_cs_n;
+    // Note: mcu_miso removed - not used (one-way communication: FPGA→MCU only)
     
     // Status
     logic led_initialized, led_error;
@@ -42,7 +43,7 @@ module tb_system_with_sim_imu;
         .mosi(mosi1),
         .miso(miso1),
         .cs_n(cs_n1),
-        .sensor_id(0)  // Right hand
+        .sensor_id(1'b0)  // Right hand (1 bit)
     );
     
     bno085_sim_model sensor2_model (
@@ -52,7 +53,7 @@ module tb_system_with_sim_imu;
         .mosi(mosi2),
         .miso(miso2),
         .cs_n(cs_n2),
-        .sensor_id(1)  // Left hand
+        .sensor_id(1'b1)  // Left hand (1 bit)
     );
     
     // Instantiate DUT
@@ -74,7 +75,6 @@ module tb_system_with_sim_imu;
         .kick_button(kick_button),
         .mcu_sclk(mcu_sclk),
         .mcu_mosi(mcu_mosi),
-        .mcu_miso(mcu_miso),
         .mcu_cs_n(mcu_cs_n),
         .led_initialized(led_initialized),
         .led_error(led_error)

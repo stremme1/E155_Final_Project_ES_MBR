@@ -86,6 +86,8 @@ module drum_set_top (
     //   2'b10 = divide by 8
     //   2'b11 = divide by 16
     
+    // HARDWARE CLOCK - HSOSC (ACTIVE FOR HARDWARE)
+    // For hardware: Uncomment HSOSC below and comment out simulation clock
     HSOSC #(.CLKHF_DIV(2'b11)) hf_osc (
         .CLKHFPU(1'b1),   // Power up
         .CLKHFEN(1'b1),   // Enable
@@ -93,8 +95,7 @@ module drum_set_top (
     );
     
     // SIMULATION CLOCK - UNCOMMENT FOR SIMULATION
-    // Comment out HSOSC above and uncomment this section for testbenches
-    // For simulation: Comment out HSOSC instantiation (lines 89-93) and uncomment below
+    // For simulation: Comment out HSOSC above and uncomment this section
     // 3MHz clock: period = 333.33ns, half period = 166.67ns
     /*
     initial begin
