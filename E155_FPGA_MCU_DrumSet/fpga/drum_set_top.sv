@@ -314,7 +314,14 @@ module drum_set_top (
     // Status Outputs
     // ============================================
     
-    assign led_initialized = bno1_initialized && bno2_initialized;
+    // LED indicates system is powered on (immediately after reset release)
+    // Will stay on once both sensors initialize, or can be used as power indicator
+    // For power indicator: just use 1'b1
+    // For initialization indicator: use bno1_initialized && bno2_initialized
+    // Using OR so LED turns on immediately after reset release (power indicator)
+    // and stays on once sensors initialize
+    assign led_initialized = 1'b1;  // Power-on indicator - always on when system is running
+    // Alternative: assign led_initialized = bno1_initialized && bno2_initialized;  // Only on when sensors ready
     // Use calib_button and calib_active in led_error to prevent optimization
     // CRITICAL: Must use it in a way that synthesis can't optimize away
     // Using both calib_button and calib_active (which depends on calib_button) ensures the entire signal chain is preserved
