@@ -32,7 +32,7 @@ SCL (SCK)       →    P20          →    sclk1 (SPI clock)
 DI (MOSI)       →    P13          →    mosi1 (FPGA sends data)
 SDA (MISO)      →    P12          →    miso1 (sensor sends data)
 CS              →    P18          →    cs_n1 (chip select, with 10kΩ pull-up)
-INT             →    (assign pin) →    int1 (REQUIRED for stable SPI - active LOW)
+INT             →    P9          →    int1 (REQUIRED for stable SPI - active LOW)
 RST             →    3.3V         →    Reset (keep HIGH, active LOW)
 P0              →    3.3V         →    Mode select (HIGH for SPI mode) - CRITICAL!
 P1              →    3.3V         →    Mode select (HIGH for SPI mode) - CRITICAL!
@@ -63,7 +63,7 @@ SCL (SCK)       →    P4           →    sclk2 (SPI clock)
 DI (MOSI)       →    P47          →    mosi2 (FPGA sends data)
 SDA (MISO)      →    P6           →    miso2 (sensor sends data)
 CS              →    P48          →    cs_n2 (chip select, with 10kΩ pull-up)
-INT             →    (assign pin) →    int2 (REQUIRED for stable SPI - active LOW)
+INT             →    P3          →    int2 (REQUIRED for stable SPI - active LOW)
 RST             →    3.3V         →    Reset (keep HIGH, active LOW)
 P0              →    3.3V         →    Mode select (HIGH for SPI mode) - CRITICAL!
 P1              →    3.3V         →    Mode select (HIGH for SPI mode) - CRITICAL!

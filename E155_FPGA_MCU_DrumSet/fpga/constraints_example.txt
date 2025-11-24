@@ -14,8 +14,8 @@
 # | rst_n            | P43  | Reset button (active LOW)            | 10kΩ    |
 # | miso1            | P12  | SPI MISO from Sensor 1 (Right Hand)  | No      |
 # | miso2            | P6   | SPI MISO from Sensor 2 (Left Hand)  | No      |
-# | int1             | TBD  | Interrupt from Sensor 1 (REQUIRED)  | 10kΩ    |
-# | int2             | TBD  | Interrupt from Sensor 2 (REQUIRED)  | 10kΩ    |
+# | int1             | P9   | Interrupt from Sensor 1 (REQUIRED)  | 10kΩ    |
+# | int2             | P3   | Interrupt from Sensor 2 (REQUIRED)  | 10kΩ    |
 # | calib_button     | P11  | Calibration button                   | 10kΩ    |
 # | kick_button      | P2   | Kick drum button (optional)          | 10kΩ    |
 #
@@ -46,7 +46,7 @@ set_io sclk1   P20           # SPI clock
 set_io mosi1   P13           # SPI MOSI
 set_io miso1   P12           # SPI MISO
 set_io cs_n1   P18           # Chip select (needs 10kΩ pull-up)
-set_io int1    P0            # Interrupt (REQUIRED for stable SPI, active LOW, needs 10kΩ pull-up)
+set_io int1    P9            # Interrupt (REQUIRED for stable SPI, active LOW, needs 10kΩ pull-up)
 # CRITICAL HARDWARE WIRING: BNO085 P0 pin must be connected to 3.3V (HIGH) for SPI mode!
 # CRITICAL HARDWARE WIRING: BNO085 P1 pin must be connected to 3.3V (HIGH) for SPI mode!
 
@@ -55,7 +55,7 @@ set_io sclk2   P4            # SPI clock
 set_io mosi2   P47           # SPI MOSI
 set_io miso2   P6            # SPI MISO
 set_io cs_n2   P48           # Chip select (needs 10kΩ pull-up)
-set_io int2    P1            # Interrupt (REQUIRED for stable SPI, active LOW, needs 10kΩ pull-up)
+set_io int2    P3            # Interrupt (REQUIRED for stable SPI, active LOW, needs 10kΩ pull-up)
 # CRITICAL HARDWARE WIRING: BNO085 P0 pin must be connected to 3.3V (HIGH) for SPI mode!
 # CRITICAL HARDWARE WIRING: BNO085 P1 pin must be connected to 3.3V (HIGH) for SPI mode!
 
