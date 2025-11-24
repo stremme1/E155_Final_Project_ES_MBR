@@ -5,8 +5,9 @@
 
 module tb_spi_comprehensive;
 
-    localparam CLK_PERIOD = 20;  // 50MHz
-    localparam CLK_DIV = 16;     // SPI clock divider
+    // System uses 3MHz clock (matches hardware HSOSC)
+    localparam CLK_PERIOD = 333;  // 3MHz clock (333.33ns period)
+    localparam CLK_DIV = 16;     // SPI clock divider (SPI clock = 3MHz/16 = 187.5kHz)
     
     logic clk, rst_n;
     logic data_valid;
