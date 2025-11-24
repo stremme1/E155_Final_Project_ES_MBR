@@ -51,8 +51,8 @@ module gesture_detector (
     logic [15:0] last_gyro1_y, last_gyro2_y;
     
     // Calibration logic with debouncing
-    // Debounce parameters: 50ms at 50MHz = 2,500,000 cycles
-    localparam logic [31:0] DEBOUNCE_COUNT = 32'd2_500_000;  // 50ms debounce
+    // Debounce parameters: 50ms at 3MHz = 150,000 cycles
+    localparam logic [31:0] DEBOUNCE_COUNT = 32'd150_000;  // 50ms debounce at 3MHz
     logic calib_button_sync1, calib_button_sync2;  // Double synchronize
     logic calib_button_prev;
     logic [31:0] debounce_counter;
