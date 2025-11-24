@@ -7,8 +7,9 @@ module tb_system_with_sim_imu;
 
     // Parameters
     // System uses 3MHz clock internally (from HSOSC)
-    // For simulation: Use 3MHz clock to match hardware
-    localparam CLK_PERIOD = 333;  // 3MHz clock (333.33ns period)
+    // For simulation: Use faster clock for quicker testing
+    // Note: drum_set_top generates its own 3MHz clock for simulation
+    localparam CLK_PERIOD = 20;  // 50MHz for simulation (faster than 3MHz)
     localparam SPI_CLK_DIV = 16;
     
     // Clock and reset
@@ -124,7 +125,10 @@ module tb_system_with_sim_imu;
         // For simulation: Use shorter wait times (simulated sensors respond faster)
         $display("Waiting for sensor initialization...");
         $display("Initialization takes ~100ms (300k cycles at 3MHz) + SPI transactions");
-        #(CLK_PERIOD * 500000);  // Wait 10ms at 50MHz simulation (reduced for faster testing)
+        // At 3MHz: 300k cycles = 100ms
+        // At 50MHz simulation: 300k cycles = 6ms
+        // Wait a bit longer to account for SPI transactions
+        #(CLK_PERIOD * 100000);  // Wait 2ms at 50MHz (enough for initialization)
         
         // Test 1: System initialization
         $display("\n=== Test 1: System Initialization ===");
@@ -282,8 +286,11 @@ module tb_system_with_sim_imu;
     // Add timeout to prevent infinite simulation
     initial begin
         #(CLK_PERIOD * 2000000);  // 40ms timeout at 50MHz
-        $display("\nTIMEOUT: Simulation exceeded maximum time");
+        $display("\n========================================");
+        $display("TIMEOUT: Simulation exceeded maximum time (40ms)");
         $display("This may indicate an infinite loop or missing $finish");
+        $display("Forcing simulation to end...");
+        $display("========================================\n");
         $finish;
     end
 

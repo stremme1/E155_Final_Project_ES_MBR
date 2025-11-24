@@ -86,23 +86,23 @@ module drum_set_top (
     //   2'b10 = divide by 8
     //   2'b11 = divide by 16
     
-    // HARDWARE CLOCK - HSOSC (COMMENT OUT FOR SIMULATION)
+    // HARDWARE CLOCK - HSOSC (ACTIVE FOR HARDWARE)
     // For hardware: Uncomment HSOSC below and comment out simulation clock
-    /*
     HSOSC #(.CLKHF_DIV(2'b11)) hf_osc (
         .CLKHFPU(1'b1),   // Power up
         .CLKHFEN(1'b1),   // Enable
         .CLKHF(clk)       // Output clock (3MHz from 48MHz / 16)
     );
-    */
     
-    // SIMULATION CLOCK - ACTIVE FOR SIMULATION
+    // SIMULATION CLOCK - UNCOMMENT FOR SIMULATION
     // For simulation: Comment out HSOSC above and uncomment this section
     // 3MHz clock: period = 333.33ns, half period = 166.67ns
+    /*
     initial begin
         clk = 0;
         forever #167 clk = ~clk; // 3MHz clock (333.33ns period) - matches hardware HSOSC
     end
+    */
     
     // ============================================
     // Sensor 1 (Right Hand) - BNO085
