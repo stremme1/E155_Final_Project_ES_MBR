@@ -275,17 +275,8 @@ module drum_set_top (
     assign kick_button_edge = kick_button && !kick_button_prev;
     
     // Use calib_button directly in top-level to ensure Radiant recognizes it
-    // Connect it to an output (led_error) to prevent optimization
-    // This ensures the signal is actively used and can't be optimized away
-    logic calib_button_sync;  // Synchronized version
-    
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            calib_button_sync <= 1'b0;
-        end else begin
-            calib_button_sync <= calib_button;  // Direct use
-        end
-    end
+    // Must use it in a way that affects an output and can't be optimized away
+    // Simply synchronizing it isn't enough - need to actually use it
     
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -324,10 +315,11 @@ module drum_set_top (
     // ============================================
     
     assign led_initialized = bno1_initialized && bno2_initialized;
-    // Use calib_button_sync in led_error to prevent optimization of calib_button
+    // Use calib_button directly in led_error to prevent optimization
     // This ensures Radiant recognizes calib_button as a top-level port
-    // Using XOR with itself (always 0) so it doesn't affect output but prevents optimization
-    assign led_error = bno1_error || bno2_error || (calib_button_sync ^ calib_button_sync);
+    // Using it in a way that can't be optimized: calib_button && !calib_button is always 0
+    // but the synthesis tool must evaluate calib_button, so it can't optimize it away
+    assign led_error = bno1_error || bno2_error || (calib_button && !calib_button);
     
     // CRITICAL: Use calib_button_monitor to ensure calib_button signal chain is not optimized
     // This registered signal is driven by calib_button_edge_top, which is computed from calib_button
