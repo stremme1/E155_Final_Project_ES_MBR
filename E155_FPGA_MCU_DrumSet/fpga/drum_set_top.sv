@@ -124,8 +124,8 @@ module drum_set_top (
         .busy(spi1_busy),
         .sclk(sclk1),
         .mosi(mosi1),
-        .miso(miso1),
-        .cs_n(cs_n1)
+        .miso(miso1)
+        // cs_n removed from spi_master
     );
     
     bno085_controller bno085_ctrl1 (
@@ -138,6 +138,7 @@ module drum_set_top (
         .spi_rx_valid(spi1_rx_valid),
         .spi_rx_data(spi1_rx_data),
         .spi_busy(spi1_busy),
+        .cs_n(cs_n1),  // CS controlled by controller for proper packet framing
         .int_n(int1),  // Raw INT pin - handled inside controller with edge detection
         .quat_valid(quat1_valid),
         .quat_w(quat1_w),
@@ -182,8 +183,8 @@ module drum_set_top (
         .busy(spi2_busy),
         .sclk(sclk2),
         .mosi(mosi2),
-        .miso(miso2),
-        .cs_n(cs_n2)
+        .miso(miso2)
+        // cs_n removed from spi_master
     );
     
     bno085_controller bno085_ctrl2 (
@@ -196,6 +197,7 @@ module drum_set_top (
         .spi_rx_valid(spi2_rx_valid),
         .spi_rx_data(spi2_rx_data),
         .spi_busy(spi2_busy),
+        .cs_n(cs_n2),  // CS controlled by controller
         .int_n(int2),  // Raw INT pin - handled inside controller with edge detection
         .quat_valid(quat2_valid),
         .quat_w(quat2_w),
@@ -348,7 +350,7 @@ module drum_set_top (
     // - If initialized (1) and button pressed (1) -> 0 (LED turns OFF temporarily)
     // - If initialized (1) and button released (0) -> 1 (LED stays ON)
     // - If not initialized (0) and button pressed (1) -> 1 (LED turns ON temporarily)
-    assign led_initialized = (bno1_initialized && bno2_initialized) ^ calib_button;
+    assign led_initialized = (bno1_initialized && bno2_initialized) ^ calib_button_sync;
     
     // CRITICAL: Use INT pins and calib_button in led_error to prevent optimization
     // INT pins: If stuck LOW (active) for too long, it may indicate a problem

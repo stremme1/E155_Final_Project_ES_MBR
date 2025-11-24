@@ -19,8 +19,8 @@ module spi_master #(
     // SPI interface
     output logic        sclk,
     output logic        mosi,
-    input  logic        miso,
-    output logic        cs_n
+    input  logic        miso
+    // cs_n removed - controlled by higher level module for packet framing
 );
 
     typedef enum logic [2:0] {
@@ -67,7 +67,6 @@ module spi_master #(
             tx_shift <= 8'd0;
             rx_shift <= 8'd0;
             sclk_en <= 1'b0;
-            cs_n <= 1'b1;
             tx_ready <= 1'b0;
             rx_valid <= 1'b0;
             rx_data <= 8'd0;
@@ -76,14 +75,12 @@ module spi_master #(
             
             case (state)
                 IDLE: begin
-                    cs_n <= 1'b1;
                     sclk_en <= 1'b0;
                     bit_cnt <= 4'd0;
                     tx_ready <= 1'b1;
                     
                     if (start && tx_valid) begin
                         state <= TX_RX;
-                        cs_n <= 1'b0;
                         tx_shift <= tx_data;
                         rx_shift <= 8'd0;
                         tx_ready <= 1'b0;
@@ -123,7 +120,6 @@ module spi_master #(
                 DONE: begin
                     rx_data <= rx_shift;
                     rx_valid <= 1'b1;
-                    cs_n <= 1'b1;
                     state <= IDLE;
                 end
             endcase
