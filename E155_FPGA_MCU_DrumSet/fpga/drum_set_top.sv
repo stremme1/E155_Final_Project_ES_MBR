@@ -24,7 +24,7 @@ module drum_set_top (
     // Note: int2 removed - interrupt pin not used (polling mode)
     
     // User Interface
-    (* keep *) input  logic        calib_button,   // Calibration button (P11) - MUST BE CONNECTED
+    input  logic        calib_button,   // Calibration button (P11) - MUST BE CONNECTED
     input  logic        kick_button,    // Kick drum button (optional, P2)
     
     // SPI Output to MCU
@@ -259,9 +259,9 @@ module drum_set_top (
     // Explicit use of calib_button in top-level to ensure Radiant recognizes it
     // This prevents optimization and ensures pin assignment is available
     // Match the pattern used for kick_button (sequential + combinational usage)
-    (* keep *) logic calib_button_prev_top;
-    (* keep *) logic calib_button_edge_top;
-    (* keep *) logic calib_button_monitor;  // Monitor signal to prevent optimization
+    logic calib_button_prev_top;
+    logic calib_button_edge_top;
+    logic calib_button_monitor;  // Monitor signal to prevent optimization
     
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
