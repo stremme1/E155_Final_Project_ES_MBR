@@ -3,6 +3,39 @@
 #
 # NOTE: Clock is generated internally by HSOSC - DO NOT assign clk to a pin!
 
+# ============================================================================
+# Top-Level Module Port Order Reference
+# ============================================================================
+# This table shows all ports in the order they appear in drum_set_top.sv
+#
+# INPUTS (in order):
+# | Signal Name      | Pin  | Description                          | Pull-up |
+# |------------------|------|--------------------------------------|---------|
+# | rst_n            | P43  | Reset button (active LOW)            | 10kΩ    |
+# | miso1            | P12  | SPI MISO from Sensor 1 (Right Hand)  | No      |
+# | miso2            | P6   | SPI MISO from Sensor 2 (Left Hand)  | No      |
+# | calib_button     | P11  | Calibration button                   | 10kΩ    |
+# | kick_button      | P2   | Kick drum button (optional)          | 10kΩ    |
+#
+# OUTPUTS (in order):
+# | Signal Name      | Pin  | Description                          | Pull-up |
+# |------------------|------|--------------------------------------|---------|
+# | sclk1            | P20  | SPI clock to Sensor 1                | No      |
+# | mosi1            | P13  | SPI MOSI to Sensor 1                 | No      |
+# | cs_n1            | P18  | Chip select to Sensor 1 (active LOW) | 10kΩ    |
+# | sclk2            | P4   | SPI clock to Sensor 2                | No      |
+# | mosi2            | P47  | SPI MOSI to Sensor 2                 | No      |
+# | cs_n2            | P48  | Chip select to Sensor 2 (active LOW) | 10kΩ    |
+# | mcu_sclk         | P21  | SPI clock to MCU                     | No      |
+# | mcu_mosi         | P10  | SPI MOSI to MCU                      | No      |
+# | mcu_cs_n         | P19  | Chip select to MCU (active LOW)      | 10kΩ    |
+# | led_initialized  | P28  | LED when initialized                 | No      |
+# | led_error        | P38  | LED for errors                       | No      |
+#
+# ============================================================================
+# Pin Assignment Constraints (for copy-paste into Radiant)
+# ============================================================================
+
 # System Reset
 # Note: Clock is generated internally by HSOSC - no clock pin needed
 set_io rst_n   P43           # Reset button (active LOW - goes LOW to reset)
