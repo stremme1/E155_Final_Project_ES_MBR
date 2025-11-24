@@ -6,7 +6,9 @@
 module tb_system_with_sim_imu;
 
     // Parameters
-    localparam CLK_PERIOD = 20;  // 50MHz clock
+    // System uses 3MHz clock internally (from HSOSC)
+    // For simulation: Use 3MHz clock to match hardware
+    localparam CLK_PERIOD = 333;  // 3MHz clock (333.33ns period)
     localparam SPI_CLK_DIV = 16;
     
     // Clock and reset
@@ -90,9 +92,10 @@ module tb_system_with_sim_imu;
     );
     
     // Clock generation
-    // NOTE: Clock is now generated inside drum_set_top
+    // NOTE: Clock is generated inside drum_set_top via HSOSC
     // For simulation: Comment out HSOSC in drum_set_top.sv and uncomment simulation clock section
-    // Clock generation removed from testbench - handled internally in drum_set_top
+    // The simulation clock in drum_set_top.sv will generate 3MHz clock
+    // No clock generation needed here - handled internally in drum_set_top
     
     // Test stimulus
     initial begin
@@ -104,8 +107,9 @@ module tb_system_with_sim_imu;
         rst_n = 0;
         calib_button = 0;
         kick_button = 0;
-        int1 = 0;
-        int2 = 0;
+        // INT pins are active LOW - set HIGH (no interrupt) by default
+        int1 = 1;  // HIGH = no interrupt (active LOW signal)
+        int2 = 1;  // HIGH = no interrupt (active LOW signal)
         
         // Reset
         #(CLK_PERIOD * 100);

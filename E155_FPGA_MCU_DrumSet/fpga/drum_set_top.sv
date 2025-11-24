@@ -95,10 +95,11 @@ module drum_set_top (
     // SIMULATION CLOCK - UNCOMMENT FOR SIMULATION
     // Comment out HSOSC above and uncomment this section for testbenches
     // For simulation: Comment out HSOSC instantiation (lines 89-93) and uncomment below
+    // 3MHz clock: period = 333.33ns, half period = 166.67ns
     /*
     initial begin
         clk = 0;
-        forever #10000 clk = ~clk; // 50kHz clock (20us period) - MUCH SLOWER for Questa
+        forever #167 clk = ~clk; // 3MHz clock (333.33ns period) - matches hardware HSOSC
     end
     */
     

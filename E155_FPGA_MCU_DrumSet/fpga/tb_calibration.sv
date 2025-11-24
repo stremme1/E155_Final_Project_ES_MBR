@@ -6,8 +6,11 @@
 module tb_calibration;
 
     // Parameters
-    localparam CLK_PERIOD = 20;  // 50MHz clock
-    localparam DEBOUNCE_TIME = 50_000_000;  // 50ms in nanoseconds
+    // Note: System uses 3MHz clock (333.33ns period)
+    // For simulation, using 50MHz (20ns period) is fine - debounce count is in clock cycles
+    localparam CLK_PERIOD = 20;  // 50MHz clock for simulation
+    localparam DEBOUNCE_COUNT_TB = 150_000;  // 50ms at 3MHz = 150,000 cycles
+    // At 50MHz simulation: 150,000 cycles = 3ms, but we'll use the actual count
     
     // Clock and reset
     logic clk;
@@ -181,7 +184,7 @@ module tb_calibration;
         $display("Pressing calibration button at yaw1=45, yaw2=315...");
         $display("  Keeping data_valid high during entire debounce period...");
         calib_button = 1;
-        #(CLK_PERIOD * 2500000);  // Hold for >50ms at 50MHz (2.5M cycles = 50ms)
+        #(CLK_PERIOD * (DEBOUNCE_COUNT_TB + 100));  // Hold for debounce period + margin
         // Keep data_valid high for a bit more after button release
         #(CLK_PERIOD * 100);
         calib_button = 0;
@@ -272,7 +275,7 @@ module tb_calibration;
         $display("  Previous offsets: offset1=%0d, offset2=%0d", 
                  yaw_offset1, yaw_offset2);
         calib_button = 1;
-        #(CLK_PERIOD * 2500000);  // Hold for debounce period (50ms)
+        #(CLK_PERIOD * (DEBOUNCE_COUNT_TB + 100));  // Hold for debounce period + margin
         #(CLK_PERIOD * 100);  // Keep data_valid high a bit more
         calib_button = 0;
         #(CLK_PERIOD * 2000);  // Wait for calib_active to clear
@@ -303,7 +306,7 @@ module tb_calibration;
         $display("Pressing button without valid data...");
         $display("  data_valid_1=%b, data_valid_2=%b", data_valid_1, data_valid_2);
         calib_button = 1;
-        #(CLK_PERIOD * 2500000);  // Hold for debounce period
+        #(CLK_PERIOD * (DEBOUNCE_COUNT_TB + 100));  // Hold for debounce period + margin
         calib_button = 0;
         #(CLK_PERIOD * 1000);
         
