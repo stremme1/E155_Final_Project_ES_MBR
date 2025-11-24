@@ -1,13 +1,23 @@
 // Comprehensive SPI Testbench
 // Tests all functionality including edge cases, timing, and error conditions
+//
+// NOTE: This testbench tests spi_to_mcu module only (not BNO085 controllers)
+// - INT pins (int1, int2) are NOT needed here - they are only used in bno085_controller modules
+// - This testbench only tests SPI communication from FPGA to MCU
+// - For full system testing with BNO085 sensors, use tb_system_with_sim_imu.sv
 
 `timescale 1ns / 1ps
 
 module tb_spi_comprehensive;
 
-    // System uses 3MHz clock (matches hardware HSOSC)
-    localparam CLK_PERIOD = 333;  // 3MHz clock (333.33ns period)
-    localparam CLK_DIV = 16;     // SPI clock divider (SPI clock = 3MHz/16 = 187.5kHz)
+    // Clock configuration
+    // System uses 3MHz clock in hardware (from HSOSC)
+    // For simulation: Using 50MHz for faster simulation (SPI module works at any clock)
+    // SPI clock = system_clock / CLK_DIV
+    // At 50MHz with CLK_DIV=16: SPI clock = 3.125MHz (close to hardware 3MHz)
+    // At 3MHz with CLK_DIV=16: SPI clock = 187.5kHz (too slow for simulation)
+    localparam CLK_PERIOD = 20;  // 50MHz for simulation (faster than 3MHz)
+    localparam CLK_DIV = 16;     // SPI clock divider (matches hardware)
     
     logic clk, rst_n;
     logic data_valid;
