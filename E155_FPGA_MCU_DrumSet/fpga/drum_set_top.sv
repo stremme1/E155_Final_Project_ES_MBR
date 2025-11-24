@@ -342,7 +342,13 @@ module drum_set_top (
     // Status Outputs
     // ============================================
     
-    assign led_initialized = bno1_initialized && bno2_initialized;
+    // Blink initialized LED when calibration button is pressed for visual feedback
+    // This also ensures calib_button is not optimized away even if led_error pin is unused
+    // Logic:
+    // - If initialized (1) and button pressed (1) -> 0 (LED turns OFF temporarily)
+    // - If initialized (1) and button released (0) -> 1 (LED stays ON)
+    // - If not initialized (0) and button pressed (1) -> 1 (LED turns ON temporarily)
+    assign led_initialized = (bno1_initialized && bno2_initialized) ^ calib_button;
     
     // CRITICAL: Use INT pins and calib_button in led_error to prevent optimization
     // INT pins: If stuck LOW (active) for too long, it may indicate a problem

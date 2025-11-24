@@ -111,13 +111,9 @@ module gesture_detector (
             yaw2_norm <= 16'd0;
             calib_active <= 1'b0;
         end else begin
-            // Calibration: detect button press (rising edge) and signal to top level
-            // Top level will capture yaw values and pass them back as yaw_offset1/yaw_offset2
-            if (calib_button_debounced && !calib_button_prev && data_valid_1 && data_valid_2) begin
-                calib_active <= 1'b1;
-            end else if (!calib_button_debounced) begin
-                calib_active <= 1'b0;
-            end
+            // Calibration: Signal to top level to capture offsets when button is held
+            // Top level handles the data validity check before capturing
+            calib_active <= calib_button_debounced;
             
             // Normalize yaw values using input offsets (captured by top level)
             if (data_valid_1) begin
