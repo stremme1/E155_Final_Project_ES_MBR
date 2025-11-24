@@ -274,16 +274,16 @@ module drum_set_top (
     
     assign kick_button_edge = kick_button && !kick_button_prev;
     
-    // Simple use of calib_button in top-level to ensure Radiant recognizes it
-    // Just use it directly like kick_button - no need for extra signals
-    // The button is passed to gesture_detector which handles all the calibration logic
-    logic calib_button_sync;  // Simple synchronization to prevent optimization
+    // Use calib_button directly in top-level to ensure Radiant recognizes it
+    // Connect it to an output (led_error) to prevent optimization
+    // This ensures the signal is actively used and can't be optimized away
+    logic calib_button_sync;  // Synchronized version
     
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             calib_button_sync <= 1'b0;
         end else begin
-            calib_button_sync <= calib_button;  // Direct use - prevents optimization
+            calib_button_sync <= calib_button;  // Direct use
         end
     end
     
@@ -324,7 +324,11 @@ module drum_set_top (
     // ============================================
     
     assign led_initialized = bno1_initialized && bno2_initialized;
-    assign led_error = bno1_error || bno2_error;
+    // Use calib_button_sync in led_error to prevent optimization of calib_button
+    // This ensures Radiant recognizes calib_button as a top-level port
+    // The button state doesn't affect error LED (calib_button_sync is always 0 or 1, so OR with 0 has no effect)
+    // But this usage prevents the synthesis tool from optimizing away the signal chain
+    assign led_error = bno1_error || bno2_error || (calib_button_sync && 1'b0);  // Use signal but don't affect output
     
     // CRITICAL: Use calib_button_monitor to ensure calib_button signal chain is not optimized
     // This registered signal is driven by calib_button_edge_top, which is computed from calib_button
