@@ -24,7 +24,7 @@ module drum_set_top (
     // Note: int2 removed - interrupt pin not used (polling mode)
     
     // User Interface
-    input  logic        calib_button,   // Calibration button (P11) - MUST BE CONNECTED
+    (* keep *) input  logic        calib_button,   // Calibration button (P11) - MUST BE CONNECTED
     input  logic        kick_button,    // Kick drum button (optional, P2)
     
     // SPI Output to MCU
@@ -259,14 +259,19 @@ module drum_set_top (
     // Explicit use of calib_button in top-level to ensure Radiant recognizes it
     // This prevents optimization and ensures pin assignment is available
     // Match the pattern used for kick_button (sequential + combinational usage)
-    logic calib_button_prev_top;
-    logic calib_button_edge_top;
+    (* keep *) logic calib_button_prev_top;
+    (* keep *) logic calib_button_edge_top;
+    (* keep *) logic calib_button_monitor;  // Monitor signal to prevent optimization
     
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             calib_button_prev_top <= 1'b0;
+            calib_button_monitor <= 1'b0;
         end else begin
             calib_button_prev_top <= calib_button;  // Direct use in sequential logic
+            // Use calib_button_edge_top to drive a signal - prevents optimization
+            // This ensures the entire signal chain is preserved
+            calib_button_monitor <= calib_button_edge_top;
         end
     end
     
@@ -329,11 +334,11 @@ module drum_set_top (
     assign led_initialized = bno1_initialized && bno2_initialized;
     assign led_error = bno1_error || bno2_error;
     
-    // Use calib_button_edge_top to ensure calib_button is recognized (similar to kick_button_edge)
-    // This signal is monitored but doesn't affect functionality - gesture_detector handles actual calibration
-    // The edge detection here ensures Radiant sees calib_button used in both sequential and combinational logic
-    // Note: calib_button_edge_top is not used in logic, but its computation ensures calib_button is not optimized away
-    // This matches the pattern for kick_button which works correctly
+    // CRITICAL: Use calib_button_monitor to ensure calib_button signal chain is not optimized
+    // This registered signal is driven by calib_button_edge_top, which is computed from calib_button
+    // Even though calib_button_monitor is not read, its existence prevents optimization of the entire chain
+    // This ensures Radiant recognizes calib_button as a top-level port that needs pin assignment
+    // Pattern matches kick_button usage which works correctly in Radiant
     
 endmodule
 
