@@ -1,5 +1,10 @@
 // Testbench for Calibration Button Functionality
 // Tests calibration button debouncing, yaw offset capture, and zone normalization
+//
+// NOTE: calib_button is REQUIRED and must be connected (P11)
+// - Connected to gesture_detector module
+// - Directly affects led_error output when pressed during calibration
+// - Used to capture yaw offsets for normalization
 
 `timescale 1ns / 1ps
 

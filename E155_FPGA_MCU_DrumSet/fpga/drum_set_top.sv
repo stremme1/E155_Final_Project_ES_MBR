@@ -107,6 +107,20 @@ module drum_set_top (
     // Sensor 1 (Right Hand) - BNO085
     // ============================================
     
+    // Monitor INT pins (REQUIRED for stable SPI operation per Adafruit documentation)
+    // INT pins must be synchronized before use in bno085_controller
+    // INT is active LOW - goes LOW when sensor has data ready
+    logic int1_sync, int2_sync;
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            int1_sync <= 1'b1;  // INT is active low, so HIGH = no interrupt
+            int2_sync <= 1'b1;
+        end else begin
+            int1_sync <= int1;  // Synchronize INT pin 1
+            int2_sync <= int2;  // Synchronize INT pin 2
+        end
+    end
+    
     spi_master #(.CLK_DIV(16)) spi_master1 (
         .clk(clk),
         .rst_n(rst_n),
@@ -145,20 +159,7 @@ module drum_set_top (
         .gyro_z(gyro1_z),
         .initialized(bno1_initialized),
         .error(bno1_error)
-    );
-    
-    // Monitor INT pins (required for stable SPI operation per Adafruit documentation)
-    // Even if not used in logic, they must be connected to prevent optimization
-    logic int1_sync, int2_sync;
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            int1_sync <= 1'b1;  // INT is active low, so HIGH = no interrupt
-            int2_sync <= 1'b1;
-        end else begin
-            int1_sync <= int1;
-            int2_sync <= int2;
-        end
-    end
+    )
     
     quaternion_to_euler quat_to_euler1 (
         .clk(clk),
