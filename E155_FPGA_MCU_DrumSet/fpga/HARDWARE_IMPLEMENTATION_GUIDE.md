@@ -123,8 +123,10 @@ SPI Pin Functions (from Adafruit BNO085 Datasheet):
 - DI: Data In / MOSI - Data FROM processor TO sensor (FPGA sends data)
 - SDA: Data Out / MISO - Data FROM sensor TO processor (FPGA receives data)
 - CS: Chip Select - Input to chip, pull LOW to start SPI transaction
-- INT: Interrupt - Active Low (optional, not used in polling mode)
+- INT: Interrupt - Active Low (REQUIRED for stable SPI operation per Adafruit documentation)
 - RST: Reset - Active Low, tie to 3.3V (keep HIGH, required for stable SPI)
+- P0: Mode select - Must be HIGH (3.3V) for SPI mode (CRITICAL!)
+- P1: Mode select - Must be HIGH (3.3V) for SPI mode (CRITICAL!)
 - ADR: I2C Address pin (not used in SPI mode)
 ```
 
@@ -140,8 +142,10 @@ SCL      →       P20          → sclk1 (SPI clock)
 DI       →       P13          → mosi1 (FPGA sends data)
 SDA      →       P12          → miso1 (sensor sends data)
 CS       →       P18          → cs_n1 (chip select, with 10kΩ pull-up)
-INT      →       (unconnected) → Not used (polling mode)
+INT      →       P9           → int1 (REQUIRED for stable SPI, active LOW, 10kΩ pull-up)
 RST      →       3.3V         → Reset (keep HIGH, active LOW)
+P0       →       3.3V         → Mode select (HIGH for SPI mode) - CRITICAL!
+P1       →       3.3V         → Mode select (HIGH for SPI mode) - CRITICAL!
 ```
 
 #### **BNO085 Sensor 2 (Left Hand)**
@@ -154,8 +158,10 @@ SCL      →       P4           → sclk2 (SPI clock)
 DI       →       P47          → mosi2 (FPGA sends data)
 SDA      →       P6           → miso2 (sensor sends data)
 CS       →       P48          → cs_n2 (chip select, with 10kΩ pull-up)
-INT      →       (unconnected) → Not used (polling mode)
+INT      →       P3           → int2 (REQUIRED for stable SPI, active LOW, 10kΩ pull-up)
 RST      →       3.3V         → Reset (keep HIGH, active LOW)
+P0       →       3.3V         → Mode select (HIGH for SPI mode) - CRITICAL!
+P1       →       3.3V         → Mode select (HIGH for SPI mode) - CRITICAL!
 ```
 
 **Important**: 

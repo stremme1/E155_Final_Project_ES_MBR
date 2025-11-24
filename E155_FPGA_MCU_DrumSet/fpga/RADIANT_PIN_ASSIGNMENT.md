@@ -55,20 +55,24 @@ Based on your available pins: `BT, P0, P1, Reset, DI, CS, VIN, 3BO, Ground, SCL,
 set_io rst_n   P43             # Reset button (active LOW - goes LOW to reset)
 ```
 
-### BNO085 Sensor 1 (Right Hand) - 4 pins
+### BNO085 Sensor 1 (Right Hand) - 5 pins
 ```
 set_io sclk1   P20             # SPI clock to Sensor 1
 set_io mosi1   P13             # SPI MOSI to Sensor 1
 set_io miso1   P12             # SPI MISO from Sensor 1
 set_io cs_n1   P18             # Chip select to Sensor 1
+set_io int1    P9              # Interrupt (REQUIRED for stable SPI, active LOW, 10kΩ pull-up)
+# CRITICAL: BNO085 P0 and P1 pins must be connected to 3.3V (HIGH) for SPI mode!
 ```
 
-### BNO085 Sensor 2 (Left Hand) - 4 pins
+### BNO085 Sensor 2 (Left Hand) - 5 pins
 ```
 set_io sclk2   P4              # SPI clock to Sensor 2
 set_io mosi2   P47             # SPI MOSI to Sensor 2
 set_io miso2   P6              # SPI MISO from Sensor 2
 set_io cs_n2   P48             # Chip select to Sensor 2
+set_io int2    P3              # Interrupt (REQUIRED for stable SPI, active LOW, 10kΩ pull-up)
+# CRITICAL: BNO085 P0 and P1 pins must be connected to 3.3V (HIGH) for SPI mode!
 ```
 
 ### User Interface - 2 pins
@@ -121,12 +125,14 @@ set_io sclk1   P20                 # SPI clock
 set_io mosi1   P13                  # SPI MOSI
 set_io miso1   P12                  # SPI MISO
 set_io cs_n1   P18                  # Chip select
+set_io int1    P9                   # Interrupt (REQUIRED for stable SPI)
 
 # BNO085 Sensor 2 (Left Hand)
 set_io sclk2   P4                   # SPI clock
 set_io mosi2   P47                  # SPI MOSI
 set_io miso2   P6                   # SPI MISO
 set_io cs_n2   P48                  # Chip select
+set_io int2    P3                   # Interrupt (REQUIRED for stable SPI)
 
 # User Interface
 set_io calib_button  P11          # Calibration button (left button)

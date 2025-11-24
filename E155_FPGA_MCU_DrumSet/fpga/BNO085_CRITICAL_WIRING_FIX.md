@@ -45,9 +45,9 @@ High High SPI  ← WE NEED THIS!
 ```
 BNO085-1 Pin    →    Connection
 ─────────────────────────────────
-INT             →    FPGA Pin (NEW - needs to be added)
-P0              →    3.3V (NEW - required for SPI mode)
-P1              →    3.3V (NEW - required for SPI mode)
+INT             →    FPGA P9 (REQUIRED for stable SPI)
+P0              →    3.3V (REQUIRED for SPI mode)
+P1              →    3.3V (REQUIRED for SPI mode)
 RST             →    3.3V (Already correct)
 ```
 
@@ -55,21 +55,21 @@ RST             →    3.3V (Already correct)
 ```
 BNO085-2 Pin    →    Connection
 ─────────────────────────────────
-INT             →    FPGA Pin (NEW - needs to be added)
-P0              →    3.3V (NEW - required for SPI mode)
-P1              →    3.3V (NEW - required for SPI mode)
+INT             →    FPGA P3 (REQUIRED for stable SPI)
+P0              →    3.3V (REQUIRED for SPI mode)
+P1              →    3.3V (REQUIRED for SPI mode)
 RST             →    3.3V (Already correct)
 ```
 
 ### Code Changes Required:
 
-1. **Add INT pins to top-level module:**
+1. **INT pins added to top-level module:**
    ```systemverilog
-   input  logic        int1,          // Interrupt from Sensor 1 (REQUIRED for SPI)
-   input  logic        int2,          // Interrupt from Sensor 2 (REQUIRED for SPI)
+   input  logic        int1,          // Interrupt from Sensor 1 (P9, REQUIRED for SPI)
+   input  logic        int2,          // Interrupt from Sensor 2 (P3, REQUIRED for SPI)
    ```
 
-2. **Use INT pins in bno085_controller** (even if just monitoring)
+2. **INT pins are synchronized and monitored** in top-level module to prevent optimization
 
 ## Why Sensors Aren't Initializing
 
@@ -81,9 +81,11 @@ The sensors likely aren't initializing because:
 ## Immediate Action Items
 
 1. **Hardware:** Connect P0 and P1 to 3.3V on both sensors (CRITICAL!)
-2. **Hardware:** Connect INT pins to FPGA inputs (assign pins)
-3. **Code:** Add INT signals to top-level module
-4. **Code:** Wire INT signals to bno085_controller (even if just monitoring)
+2. **Hardware:** Connect INT pins to FPGA:
+   - Sensor 1 INT → FPGA P9
+   - Sensor 2 INT → FPGA P3
+3. **Code:** ✅ INT signals added to top-level module
+4. **Code:** ✅ INT signals synchronized and monitored
 
 ## Priority
 

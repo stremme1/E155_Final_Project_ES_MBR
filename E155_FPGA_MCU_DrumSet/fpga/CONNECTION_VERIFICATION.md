@@ -8,6 +8,13 @@
 - **Status**: ✅ CONNECTED
 - **Usage**: Used for calibration functionality with debouncing
 
+### BNO085 Interrupt Pins (`int1`, `int2`)
+- **Port Declaration**: `input logic int1, int2` (lines 20-21)
+- **Connected To**: `bno085_controller` modules (lines 150, 195)
+- **Status**: ✅ CONNECTED
+- **Usage**: Required for stable SPI operation per Adafruit documentation
+- **Pin Assignments**: int1 → P9, int2 → P3
+
 ### MCU MISO (`mcu_miso`)
 - **Port Declaration**: `input logic mcu_miso` (line 29)
 - **Connected To**: `spi_to_mcu` module (line 265)
@@ -24,6 +31,8 @@
 ```
 FPGA Top-Level (drum_set_top.sv)
 ├── calib_button (input) → gesture_detector.calib_button ✅
+├── int1 (input, P9) → bno085_controller.int_n ✅
+├── int2 (input, P3) → bno085_controller.int_n ✅
 ├── mcu_miso (input) → spi_to_mcu.mcu_miso ✅
 ├── mcu_sclk (output) ← spi_to_mcu.mcu_sclk ✅
 ├── mcu_mosi (output) ← spi_to_mcu.mcu_mosi ✅
@@ -50,6 +59,8 @@ Make sure these are assigned in your constraints file:
 ```
 set_io calib_button P11   # Calibration button (left button, with 10kΩ pull-up)
 set_io kick_button   P2   # Kick button (right button, with 10kΩ pull-up)
+set_io int1         P9    # Interrupt from Sensor 1 (REQUIRED, 10kΩ pull-up)
+set_io int2         P3    # Interrupt from Sensor 2 (REQUIRED, 10kΩ pull-up)
 set_io mcu_sclk     P21   # SPI clock to MCU
 set_io mcu_mosi     P10   # SPI MOSI to MCU
 set_io mcu_cs_n     P19   # Chip select to MCU (with 10kΩ pull-up)
