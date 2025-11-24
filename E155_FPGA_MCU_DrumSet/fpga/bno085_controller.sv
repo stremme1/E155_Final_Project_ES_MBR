@@ -77,18 +77,16 @@ module bno085_controller (
     logic [31:0] init_counter;
     
     // Monitor INT pin (REQUIRED for stable SPI operation per Adafruit documentation)
-    // Even if using polling mode, INT pin must be connected and monitored
+    // INT pin goes LOW when sensor has data ready
+    // Even in polling mode, INT pin must be connected and monitored
     logic int_n_sync;
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             int_n_sync <= 1'b1;  // INT is active LOW, so HIGH = no interrupt
         end else begin
-            int_n_sync <= int_n;  // Monitor INT pin to prevent optimization
+            int_n_sync <= int_n;  // Monitor INT pin - used in WAIT_DATA state
         end
     end
-    
-    // Use int_n_sync in error logic to ensure it's not optimized away
-    // INT pin must be connected per Adafruit documentation for stable SPI operation
     // Use it in error condition to prevent synthesis from optimizing it away
     
     // Initialize sensor on reset
@@ -286,15 +284,24 @@ module bno085_controller (
                 end
                 
                 WAIT_DATA: begin
-                    // Poll for data ready (check INT pin or poll status)
-                    // For simplicity, continuously read reports
-                    // Start reading header by sending dummy bytes
+                    // Poll for data ready - check INT pin first (per BNO085 datasheet)
+                    // INT pin goes LOW when sensor has data ready
+                    // Even in polling mode, INT pin must be monitored for stable SPI operation
+                    // Only poll when INT is active (LOW) or if we haven't polled in a while
                     if (!spi_busy && spi_tx_ready) begin
-                        state <= READ_HEADER;
-                        byte_cnt <= 8'd0;
-                        spi_tx_data <= 8'h00;  // Dummy byte to read header
-                        spi_tx_valid <= 1'b1;
-                        spi_start <= 1'b1;
+                        // Use int_n_sync to gate polling - this ensures INT pin is used
+                        // Poll when INT is LOW (data ready) or periodically (every ~20ms)
+                        if (!int_n_sync || (init_counter > 32'd60_000)) begin  // ~20ms at 3MHz
+                            state <= READ_HEADER;
+                            byte_cnt <= 8'd0;
+                            init_counter <= 32'd0;  // Reset counter
+                            spi_tx_data <= 8'h00;  // Dummy byte to read header
+                            spi_tx_valid <= 1'b1;
+                            spi_start <= 1'b1;
+                        end else begin
+                            // Increment counter while waiting
+                            init_counter <= init_counter + 1;
+                        end
                     end
                 end
                 

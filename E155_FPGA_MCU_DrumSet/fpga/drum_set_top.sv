@@ -260,18 +260,16 @@ module drum_set_top (
     );
     
     // Capture yaw offsets during calibration
-    // Use calib_button directly in a registered signal to prevent optimization
-    // This ensures the signal chain is preserved: calib_button -> gesture_detector -> calib_active
-    logic calib_button_sync_top;
+    // CRITICAL: Use calib_button directly in logic to prevent optimization
+    // calib_button is used in gesture_detector, and calib_active is used here
+    // This ensures the entire signal chain is preserved
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            calib_button_sync_top <= 1'b0;
             yaw_offset1 <= 16'd0;
             yaw_offset2 <= 16'd0;
         end else begin
-            // Register calib_button to ensure it's not optimized away
-            calib_button_sync_top <= calib_button;
             // Capture yaw offsets on rising edge of calib_active
+            // calib_active depends on calib_button in gesture_detector
             if (calib_active && euler1_valid && euler2_valid) begin
                 yaw_offset1 <= yaw1;
                 yaw_offset2 <= yaw2;
@@ -339,15 +337,52 @@ module drum_set_top (
     
     assign led_initialized = bno1_initialized && bno2_initialized;
     
-    // CRITICAL: Use calib_button and INT pins in led_error to prevent optimization
-    // The expression uses these signals in a way that affects the output
-    // This ensures Radiant recognizes them as top-level ports that need pin assignment
-    // Pattern: Use signals in a conditional that can affect the output value
-    assign led_error = bno1_error || bno2_error || 
-                      (calib_button_sync_top ? 1'b0 : 1'b0) ||  // Use calib_button (affects output)
-                      (calib_active ? 1'b0 : 1'b0) ||           // Use calib_active (depends on calib_button)
-                      (!int1_sync ? 1'b0 : 1'b0) ||            // Use int1 (REQUIRED for stable SPI)
-                      (!int2_sync ? 1'b0 : 1'b0);               // Use int2 (REQUIRED for stable SPI)
+    // CRITICAL: Use INT pins and calib_button in led_error to prevent optimization
+    // INT pins: If stuck LOW (active) for too long, it may indicate a problem
+    // calib_button: Use it directly - if pressed during error, show different behavior
+    // This ensures all signals are recognized as used by synthesis tools
+    
+    // Monitor INT pins for stuck states (error condition)
+    logic int1_error, int2_error;
+    logic [31:0] int1_low_count, int2_low_count;
+    
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            int1_low_count <= 32'd0;
+            int2_low_count <= 32'd0;
+            int1_error <= 1'b0;
+            int2_error <= 1'b0;
+        end else begin
+            // Count how long INT pins are LOW (active)
+            // If stuck LOW for >1 second, it's an error
+            if (!int1_sync) begin
+                if (int1_low_count < 32'd3_000_000) begin  // 1 second at 3MHz
+                    int1_low_count <= int1_low_count + 1;
+                end else begin
+                    int1_error <= 1'b1;  // INT stuck LOW - error condition
+                end
+            end else begin
+                int1_low_count <= 32'd0;
+                int1_error <= 1'b0;
+            end
+            
+            if (!int2_sync) begin
+                if (int2_low_count < 32'd3_000_000) begin
+                    int2_low_count <= int2_low_count + 1;
+                end else begin
+                    int2_error <= 1'b1;
+                end
+            end else begin
+                int2_low_count <= 32'd0;
+                int2_error <= 1'b0;
+            end
+        end
+    end
+    
+    // Use calib_button directly - if pressed, it affects error LED
+    // This ensures calib_button is recognized as used
+    assign led_error = bno1_error || bno2_error || int1_error || int2_error || 
+                      (calib_button && calib_active);  // Use calib_button directly
     
 endmodule
 
