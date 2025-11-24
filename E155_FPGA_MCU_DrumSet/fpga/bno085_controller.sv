@@ -5,7 +5,7 @@
 module bno085_controller (
     input  logic        clk,
     input  logic        rst_n,
-    
+
     // SPI interface
     output logic        spi_start,
     output logic        spi_tx_valid,
@@ -14,22 +14,22 @@ module bno085_controller (
     input  logic        spi_rx_valid,
     input  logic [7:0]  spi_rx_data,
     input  logic        spi_busy,
-    
+
     // INT pin (REQUIRED for stable SPI operation per Adafruit documentation)
-    input  logic        int_n,  // Active LOW interrupt (synchronized in top-level)
-    
+    input  logic        int_n,  // Active LOW interrupt - goes LOW when data ready
+
     // Sensor data outputs
     output logic        quat_valid,
     output logic signed [15:0] quat_w,
     output logic signed [15:0] quat_x,
     output logic signed [15:0] quat_y,
     output logic signed [15:0] quat_z,
-    
+
     output logic        gyro_valid,
     output logic signed [15:0] gyro_x,
     output logic signed [15:0] gyro_y,
     output logic signed [15:0] gyro_z,
-    
+
     // Status
     output logic        initialized,
     output logic        error
@@ -52,7 +52,9 @@ module bno085_controller (
         IDLE,
         INIT_WAIT,
         INIT_PRODUCT_ID,
+        INIT_DELAY_1,        // Added delay state
         INIT_ENABLE_ROTATION,
+        INIT_DELAY_2,        // Added delay state
         INIT_ENABLE_GYRO,
         WAIT_DATA,
         READ_HEADER,
@@ -76,18 +78,26 @@ module bno085_controller (
     logic [7:0] data_buffer [0:63];
     logic [31:0] init_counter;
     
-    // Monitor INT pin (REQUIRED for stable SPI operation per Adafruit documentation)
+    // INT pin handling (REQUIRED for stable SPI operation per Adafruit documentation)
     // INT pin goes LOW when sensor has data ready
-    // Even in polling mode, INT pin must be connected and monitored
-    logic int_n_sync;
+    // Synchronize and detect falling edge for immediate transaction start
+    logic int_n_sync, int_n_prev;
+    logic int_falling_edge;
+
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            int_n_sync <= 1'b1;  // INT is active LOW, so HIGH = no interrupt
+            int_n_sync <= 1'b1;      // INT is active LOW, so HIGH = no interrupt
+            int_n_prev <= 1'b1;
+            int_falling_edge <= 1'b0;
         end else begin
-            int_n_sync <= int_n;  // Monitor INT pin - used in WAIT_DATA state
+            // Synchronize INT pin
+            int_n_sync <= int_n;
+            int_n_prev <= int_n_sync;
+
+            // Detect falling edge (HIGH to LOW = data ready)
+            int_falling_edge <= (int_n_prev && !int_n_sync);
         end
     end
-    // Use it in error condition to prevent synthesis from optimizing it away
     
     // Initialize sensor on reset
     always_ff @(posedge clk or negedge rst_n) begin
@@ -142,9 +152,20 @@ module bno085_controller (
                             4: begin
                                 spi_tx_data <= CMD_PRODUCT_ID_REQUEST;
                                 byte_cnt <= 8'd0;
-                                state <= WAIT_DATA;
+                                init_counter <= 32'd0;
+                                state <= INIT_DELAY_1;
                             end
                         endcase
+                    end
+                end
+                
+                INIT_DELAY_1: begin
+                    // Wait 10ms before next command
+                    if (init_counter < 32'd30_000) begin
+                        init_counter <= init_counter + 1;
+                    end else begin
+                        state <= INIT_ENABLE_ROTATION;
+                        init_counter <= 32'd0;
                     end
                 end
                 
@@ -209,9 +230,20 @@ module bno085_controller (
                             13: begin
                                 spi_tx_data <= 8'd0;
                                 byte_cnt <= 8'd0;
-                                state <= INIT_ENABLE_GYRO;
+                                init_counter <= 32'd0;
+                                state <= INIT_DELAY_2;
                             end
                         endcase
+                    end
+                end
+                
+                INIT_DELAY_2: begin
+                    // Wait 10ms before next command
+                    if (init_counter < 32'd30_000) begin
+                        init_counter <= init_counter + 1;
+                    end else begin
+                        state <= INIT_ENABLE_GYRO;
+                        init_counter <= 32'd0;
                     end
                 end
                 
@@ -284,14 +316,13 @@ module bno085_controller (
                 end
                 
                 WAIT_DATA: begin
-                    // Poll for data ready - check INT pin first (per BNO085 datasheet)
-                    // INT pin goes LOW when sensor has data ready
-                    // Even in polling mode, INT pin must be monitored for stable SPI operation
-                    // Only poll when INT is active (LOW) or if we haven't polled in a while
+                    // Wait for data ready - INT pin falling edge triggers immediate read
+                    // INT pin goes LOW when sensor has data ready (per BNO085 datasheet)
+                    // Primary trigger: Falling edge on INT pin
+                    // Fallback: Timeout polling if INT pin fails (~100ms)
                     if (!spi_busy && spi_tx_ready) begin
-                        // Use int_n_sync to gate polling - this ensures INT pin is used
-                        // Poll when INT is LOW (data ready) or periodically (every ~20ms)
-                        if (!int_n_sync || (init_counter > 32'd60_000)) begin  // ~20ms at 3MHz
+                        // Check for falling edge (data ready) OR timeout fallback
+                        if (int_falling_edge || (init_counter > 32'd300_000)) begin  // ~100ms at 3MHz
                             state <= READ_HEADER;
                             byte_cnt <= 8'd0;
                             init_counter <= 32'd0;  // Reset counter
@@ -299,7 +330,7 @@ module bno085_controller (
                             spi_tx_valid <= 1'b1;
                             spi_start <= 1'b1;
                         end else begin
-                            // Increment counter while waiting
+                            // Increment counter while waiting for INT falling edge
                             init_counter <= init_counter + 1;
                         end
                     end

@@ -2,7 +2,7 @@
 // BNO085 SPI: Mode 3 (CPOL=1, CPHA=1), MSB first, 3MHz max
 
 module spi_master #(
-    parameter CLK_DIV = 16  // Divide system clock for SPI clock (adjust for 3MHz max)
+    parameter CLK_DIV = 16  // Half-period in system clocks
 )(
     input  logic        clk,
     input  logic        rst_n,
@@ -37,7 +37,7 @@ module spi_master #(
     logic sclk_en;
     logic sclk_reg;
     
-    // Clock divider for SPI clock
+    // Clock divider
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             clk_cnt <= 8'd0;
@@ -52,6 +52,7 @@ module spi_master #(
                 end
             end else begin
                 sclk_reg <= 1'b1;  // Return to idle high
+                clk_cnt <= 8'd0;
             end
         end
     end
@@ -63,12 +64,13 @@ module spi_master #(
         if (!rst_n) begin
             state <= IDLE;
             bit_cnt <= 4'd0;
-            tx_shift <= 8'd0;  // MOSI will be 0 when idle
+            tx_shift <= 8'd0;
             rx_shift <= 8'd0;
             sclk_en <= 1'b0;
             cs_n <= 1'b1;
             tx_ready <= 1'b0;
             rx_valid <= 1'b0;
+            rx_data <= 8'd0;
         end else begin
             rx_valid <= 1'b0;
             
@@ -78,7 +80,6 @@ module spi_master #(
                     sclk_en <= 1'b0;
                     bit_cnt <= 4'd0;
                     tx_ready <= 1'b1;
-                    // tx_shift retains value (MOSI driven via assign)
                     
                     if (start && tx_valid) begin
                         state <= TX_RX;
@@ -87,23 +88,34 @@ module spi_master #(
                         rx_shift <= 8'd0;
                         tx_ready <= 1'b0;
                         sclk_en <= 1'b1;
+                        // sclk starts High (CPOL=1)
                     end
                 end
                 
                 TX_RX: begin
-                    // Sample MISO on falling edge (CPHA=1)
-                    if (!sclk_reg && clk_cnt == CLK_DIV/2) begin
-                        rx_shift <= {rx_shift[6:0], miso};
+                    // Mode 3: Sample on Rising Edge, Shift on Falling Edge
+                    
+                    // Detect Falling Edge (High -> Low)
+                    if (sclk_reg && clk_cnt == CLK_DIV-1) begin
+                        // Falling Edge happening next cycle
+                        // Shift MOSI (except for the first bit which is already there)
+                        if (bit_cnt > 0) begin
+                            tx_shift <= {tx_shift[6:0], 1'b0};
+                        end
                     end
                     
-                    // Shift MOSI on rising edge
-                    if (sclk_reg && clk_cnt == CLK_DIV/2) begin
-                        if (bit_cnt < 7) begin
-                            tx_shift <= {tx_shift[6:0], 1'b0};
-                            bit_cnt <= bit_cnt + 1;
-                        end else begin
+                    // Detect Rising Edge (Low -> High)
+                    if (!sclk_reg && clk_cnt == CLK_DIV-1) begin
+                        // Rising Edge happening next cycle
+                        // Sample MISO
+                        rx_shift <= {rx_shift[6:0], miso};
+                        
+                        if (bit_cnt == 7) begin
+                            // Last bit sampled
                             state <= DONE;
                             sclk_en <= 1'b0;
+                        end else begin
+                            bit_cnt <= bit_cnt + 1;
                         end
                     end
                 end
@@ -118,11 +130,8 @@ module spi_master #(
         end
     end
     
-    // MOSI output: always driven from MSB of tx_shift register
-    // When idle, tx_shift = 0, so MOSI = 0 (safe idle state)
+    // MOSI output
     assign mosi = tx_shift[7];
     assign busy = (state != IDLE);
     
 endmodule
-
-

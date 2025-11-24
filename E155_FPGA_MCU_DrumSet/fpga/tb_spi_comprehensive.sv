@@ -17,7 +17,7 @@ module tb_spi_comprehensive;
     // At 50MHz with CLK_DIV=16: SPI clock = 3.125MHz (close to hardware 3MHz)
     // At 3MHz with CLK_DIV=16: SPI clock = 187.5kHz (too slow for simulation)
     localparam CLK_PERIOD = 20;  // 50MHz for simulation (faster than 3MHz)
-    localparam CLK_DIV = 16;     // SPI clock divider (matches hardware)
+    localparam CLK_DIV = 2;      // SPI clock divider (updated to match hardware)
     
     logic clk, rst_n;
     logic data_valid;

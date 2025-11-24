@@ -10,7 +10,7 @@ module tb_system_with_sim_imu;
     // For simulation: Use faster clock for quicker testing
     // Note: drum_set_top generates its own 3MHz clock for simulation
     localparam CLK_PERIOD = 20;  // 50MHz for simulation (faster than 3MHz)
-    localparam SPI_CLK_DIV = 16;
+    localparam SPI_CLK_DIV = 2;  // Updated to match hardware (was 16)
     
     // Clock and reset
     logic clk;
@@ -128,7 +128,12 @@ module tb_system_with_sim_imu;
         // At 3MHz: 300k cycles = 100ms
         // At 50MHz simulation: 300k cycles = 6ms
         // Wait a bit longer to account for SPI transactions
-        #(CLK_PERIOD * 100000);  // Wait 2ms at 50MHz (enough for initialization)
+        // UPDATE: Since we are using 3MHz HSOSC mock, we need to wait full 100ms real time
+        // 100ms initial wait + 2x 10ms delays + SPI transaction times
+        // Total needed approx 125ms. Let's wait 240ms to be safe.
+        // 240ms = 240,000,000 ns
+        // CLK_PERIOD is 20ns, so we need 12,000,000 cycles
+        #(CLK_PERIOD * 12000000);  // Wait 240ms (enough for initialization)
         
         // Test 1: System initialization
         $display("\n=== Test 1: System Initialization ===");
@@ -285,9 +290,9 @@ module tb_system_with_sim_imu;
     
     // Add timeout to prevent infinite simulation
     initial begin
-        #(CLK_PERIOD * 2000000);  // 40ms timeout at 50MHz
+        #(CLK_PERIOD * 20000000);  // 400ms timeout
         $display("\n========================================");
-        $display("TIMEOUT: Simulation exceeded maximum time (40ms)");
+        $display("TIMEOUT: Simulation exceeded maximum time (400ms)");
         $display("This may indicate an infinite loop or missing $finish");
         $display("Forcing simulation to end...");
         $display("========================================\n");

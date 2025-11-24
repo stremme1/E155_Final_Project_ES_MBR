@@ -108,21 +108,11 @@ module drum_set_top (
     // Sensor 1 (Right Hand) - BNO085
     // ============================================
     
-    // Monitor INT pins (REQUIRED for stable SPI operation per Adafruit documentation)
-    // INT pins must be synchronized before use in bno085_controller
-    // INT is active LOW - goes LOW when sensor has data ready
-    logic int1_sync, int2_sync;
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            int1_sync <= 1'b1;  // INT is active low, so HIGH = no interrupt
-            int2_sync <= 1'b1;
-        end else begin
-            int1_sync <= int1;  // Synchronize INT pin 1
-            int2_sync <= int2;  // Synchronize INT pin 2
-        end
-    end
+    // INT pins are now handled directly inside bno085_controller modules
+    // INT pin synchronization and falling edge detection moved to controller level
+    // This provides more responsive data reading when INT goes low (data ready)
     
-    spi_master #(.CLK_DIV(16)) spi_master1 (
+    spi_master #(.CLK_DIV(2)) spi_master1 (
         .clk(clk),
         .rst_n(rst_n),
         .start(spi1_start),
@@ -148,7 +138,7 @@ module drum_set_top (
         .spi_rx_valid(spi1_rx_valid),
         .spi_rx_data(spi1_rx_data),
         .spi_busy(spi1_busy),
-        .int_n(int1_sync),  // Connect synchronized INT pin (REQUIRED for stable SPI)
+        .int_n(int1),  // Raw INT pin - handled inside controller with edge detection
         .quat_valid(quat1_valid),
         .quat_w(quat1_w),
         .quat_x(quat1_x),
@@ -166,10 +156,10 @@ module drum_set_top (
         .clk(clk),
         .rst_n(rst_n),
         .valid_in(quat1_valid),
-        .quat_w(quat1_w),
-        .quat_x(quat1_x),
-        .quat_y(quat1_y),
-        .quat_z(quat1_z),
+        .quat_w(quat1_w <<< 1), // Convert Q14 to Q15 by shifting left 1
+        .quat_x(quat1_x <<< 1),
+        .quat_y(quat1_y <<< 1),
+        .quat_z(quat1_z <<< 1),
         .valid_out(euler1_valid),
         .roll(roll1),
         .pitch(pitch1),
@@ -180,7 +170,7 @@ module drum_set_top (
     // Sensor 2 (Left Hand) - BNO085
     // ============================================
     
-    spi_master #(.CLK_DIV(16)) spi_master2 (
+    spi_master #(.CLK_DIV(2)) spi_master2 (
         .clk(clk),
         .rst_n(rst_n),
         .start(spi2_start),
@@ -206,7 +196,7 @@ module drum_set_top (
         .spi_rx_valid(spi2_rx_valid),
         .spi_rx_data(spi2_rx_data),
         .spi_busy(spi2_busy),
-        .int_n(int2_sync),  // Connect synchronized INT pin (REQUIRED for stable SPI)
+        .int_n(int2),  // Raw INT pin - handled inside controller with edge detection
         .quat_valid(quat2_valid),
         .quat_w(quat2_w),
         .quat_x(quat2_x),
@@ -224,10 +214,10 @@ module drum_set_top (
         .clk(clk),
         .rst_n(rst_n),
         .valid_in(quat2_valid),
-        .quat_w(quat2_w),
-        .quat_x(quat2_x),
-        .quat_y(quat2_y),
-        .quat_z(quat2_z),
+        .quat_w(quat2_w <<< 1), // Convert Q14 to Q15
+        .quat_x(quat2_x <<< 1),
+        .quat_y(quat2_y <<< 1),
+        .quat_z(quat2_z <<< 1),
         .valid_out(euler2_valid),
         .roll(roll2),
         .pitch(pitch2),
@@ -300,13 +290,15 @@ module drum_set_top (
     // Synchronize calib_button at top level to prevent optimization
     // This ensures the signal is recognized as used by synthesis tools
     // CRITICAL: Use calib_button directly in sequential logic, similar to kick_button
-    logic calib_button_sync;
+    logic calib_button_sync, calib_button_sync_0;
     
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            calib_button_sync_0 <= 1'b0;
             calib_button_sync <= 1'b0;
         end else begin
-            calib_button_sync <= calib_button;  // Direct use of calib_button port
+            calib_button_sync_0 <= calib_button;
+            calib_button_sync <= calib_button_sync_0;
         end
     end
     
@@ -334,7 +326,7 @@ module drum_set_top (
         end
     end
     
-    spi_to_mcu #(.CLK_DIV(16)) spi_mcu_output (
+    spi_to_mcu #(.CLK_DIV(2)) spi_mcu_output (
         .clk(clk),
         .rst_n(rst_n),
         .data_valid(mcu_data_valid),
@@ -358,16 +350,24 @@ module drum_set_top (
     // This ensures all signals are recognized as used by synthesis tools
     
     // Monitor INT pins for stuck states (error condition)
+    // Synchronize INT pins for error detection (separate from controller edge detection)
+    logic int1_sync, int2_sync;
     logic int1_error, int2_error;
     logic [31:0] int1_low_count, int2_low_count;
-    
+
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            int1_sync <= 1'b1;
+            int2_sync <= 1'b1;
             int1_low_count <= 32'd0;
             int2_low_count <= 32'd0;
             int1_error <= 1'b0;
             int2_error <= 1'b0;
         end else begin
+            // Synchronize for error detection
+            int1_sync <= int1;
+            int2_sync <= int2;
+
             // Count how long INT pins are LOW (active)
             // If stuck LOW for >1 second, it's an error
             if (!int1_sync) begin
@@ -380,7 +380,7 @@ module drum_set_top (
                 int1_low_count <= 32'd0;
                 int1_error <= 1'b0;
             end
-            
+
             if (!int2_sync) begin
                 if (int2_low_count < 32'd3_000_000) begin
                     int2_low_count <= int2_low_count + 1;
