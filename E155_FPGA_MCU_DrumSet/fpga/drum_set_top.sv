@@ -256,27 +256,6 @@ module drum_set_top (
         end
     end
     
-    // Explicit use of calib_button in top-level to ensure Radiant recognizes it
-    // This prevents optimization and ensures pin assignment is available
-    // Match the pattern used for kick_button (sequential + combinational usage)
-    logic calib_button_prev_top;
-    logic calib_button_edge_top;
-    logic calib_button_monitor;  // Monitor signal to prevent optimization
-    
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            calib_button_prev_top <= 1'b0;
-            calib_button_monitor <= 1'b0;
-        end else begin
-            calib_button_prev_top <= calib_button;  // Direct use in sequential logic
-            // Use calib_button_edge_top to drive a signal - prevents optimization
-            // This ensures the entire signal chain is preserved
-            calib_button_monitor <= calib_button_edge_top;
-        end
-    end
-    
-    assign calib_button_edge_top = calib_button && !calib_button_prev_top;  // Direct use in combinational logic
-    
     // ============================================
     // SPI Output to MCU
     // ============================================
@@ -295,6 +274,19 @@ module drum_set_top (
     
     assign kick_button_edge = kick_button && !kick_button_prev;
     
+    // Simple use of calib_button in top-level to ensure Radiant recognizes it
+    // Just use it directly like kick_button - no need for extra signals
+    // The button is passed to gesture_detector which handles all the calibration logic
+    logic calib_button_sync;  // Simple synchronization to prevent optimization
+    
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            calib_button_sync <= 1'b0;
+        end else begin
+            calib_button_sync <= calib_button;  // Direct use - prevents optimization
+        end
+    end
+    
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             mcu_sound_code <= 4'd0;
@@ -311,15 +303,6 @@ module drum_set_top (
             else if (kick_button_edge && !mcu_busy) begin
                 mcu_sound_code <= 4'd2;  // Code 2 = Kick drum
                 mcu_data_valid <= 1'b1;
-            end
-            // Use calib_button_edge_top in state machine to match kick_button pattern
-            // This ensures Radiant recognizes calib_button as actively used (like kick_button)
-            // Note: Calibration is handled by gesture_detector, but this keeps signal visible to synthesis
-            else if (calib_button_edge_top && !mcu_busy) begin
-                // Calibration button pressed - could send status code if needed
-                // For now, just ensure signal is used in state machine like kick_button
-                mcu_sound_code <= 4'd0;  // Placeholder - calibration handled by gesture_detector
-                mcu_data_valid <= 1'b0;  // Don't actually send, just use the signal
             end
         end
     end
