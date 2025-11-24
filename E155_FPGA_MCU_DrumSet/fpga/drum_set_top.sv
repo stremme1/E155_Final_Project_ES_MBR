@@ -159,7 +159,7 @@ module drum_set_top (
         .gyro_z(gyro1_z),
         .initialized(bno1_initialized),
         .error(bno1_error)
-    )
+    );
     
     quaternion_to_euler quat_to_euler1 (
         .clk(clk),
