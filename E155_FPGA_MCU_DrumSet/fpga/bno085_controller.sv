@@ -89,8 +89,10 @@ module bno085_controller (
             
             case (state)
                 INIT_WAIT: begin
-                    // Wait 100ms after reset (assuming 50MHz clock)
-                    if (init_counter < 32'd5_000_000) begin
+                    // Wait 100ms after reset
+                    // Clock is 3MHz (48MHz / 16), so 100ms = 3,000,000 / 10 = 300,000 cycles
+                    // Using 300,000 cycles for 100ms at 3MHz
+                    if (init_counter < 32'd300_000) begin
                         init_counter <= init_counter + 1;
                     end else begin
                         state <= INIT_PRODUCT_ID;

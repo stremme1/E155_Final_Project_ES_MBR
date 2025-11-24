@@ -314,19 +314,22 @@ module drum_set_top (
     // Status Outputs
     // ============================================
     
-    // LED indicates system is powered on (immediately after reset release)
-    // Will stay on once both sensors initialize, or can be used as power indicator
-    // For power indicator: just use 1'b1
-    // For initialization indicator: use bno1_initialized && bno2_initialized
-    // Using OR so LED turns on immediately after reset release (power indicator)
-    // and stays on once sensors initialize
-    assign led_initialized = 1'b1;  // Power-on indicator - always on when system is running
-    // Alternative: assign led_initialized = bno1_initialized && bno2_initialized;  // Only on when sensors ready
-    // Use calib_button and calib_active in led_error to prevent optimization
-    // CRITICAL: Must use it in a way that synthesis can't optimize away
-    // Using both calib_button and calib_active (which depends on calib_button) ensures the entire signal chain is preserved
-    // The expressions always evaluate to 0 but require both signals to be evaluated, preventing optimization
-    assign led_error = bno1_error || bno2_error || (calib_button ? 1'b0 : 1'b0) || (calib_active ? 1'b0 : 1'b0);
+    assign led_initialized = bno1_initialized && bno2_initialized;
+    
+    // CRITICAL: Use calib_button in a way that prevents optimization
+    // Connect it directly to an output through a registered signal
+    // This ensures the signal chain is preserved: calib_button -> gesture_detector -> calib_active
+    logic calib_button_reg;
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            calib_button_reg <= 1'b0;
+        end else begin
+            calib_button_reg <= calib_button;  // Register calib_button to prevent optimization
+        end
+    end
+    
+    // Use both calib_button_reg and calib_active in output to preserve signal chain
+    assign led_error = bno1_error || bno2_error || (calib_button_reg ? 1'b0 : 1'b0) || (calib_active ? 1'b0 : 1'b0);
     
     // CRITICAL: Use calib_button_monitor to ensure calib_button signal chain is not optimized
     // This registered signal is driven by calib_button_edge_top, which is computed from calib_button
