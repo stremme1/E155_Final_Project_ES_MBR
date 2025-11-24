@@ -14,14 +14,14 @@ module drum_set_top (
     output logic        mosi1,          // SPI master out
     input  logic        miso1,          // SPI master in
     output logic        cs_n1,          // Chip select (active low)
-    // Note: int1 removed - interrupt pin not used (polling mode)
+    input  logic        int1,           // Interrupt (REQUIRED for stable SPI operation)
     
     // BNO085 Sensor 2 (Left Hand) - SPI Interface
     output logic        sclk2,
     output logic        mosi2,
     input  logic        miso2,
     output logic        cs_n2,
-    // Note: int2 removed - interrupt pin not used (polling mode)
+    input  logic        int2,           // Interrupt (REQUIRED for stable SPI operation)
     
     // User Interface
     input  logic        calib_button,   // Calibration button (P11) - MUST BE CONNECTED
@@ -144,6 +144,19 @@ module drum_set_top (
         .initialized(bno1_initialized),
         .error(bno1_error)
     );
+    
+    // Monitor INT pins (required for stable SPI operation per Adafruit documentation)
+    // Even if not used in logic, they must be connected to prevent optimization
+    logic int1_sync, int2_sync;
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            int1_sync <= 1'b1;  // INT is active low, so HIGH = no interrupt
+            int2_sync <= 1'b1;
+        end else begin
+            int1_sync <= int1;
+            int2_sync <= int2;
+        end
+    end
     
     quaternion_to_euler quat_to_euler1 (
         .clk(clk),
@@ -329,7 +342,8 @@ module drum_set_top (
     end
     
     // Use both calib_button_reg and calib_active in output to preserve signal chain
-    assign led_error = bno1_error || bno2_error || (calib_button_reg ? 1'b0 : 1'b0) || (calib_active ? 1'b0 : 1'b0);
+    // Use INT pins in led_error to prevent optimization (required for stable SPI)
+    assign led_error = bno1_error || bno2_error || (calib_button_reg ? 1'b0 : 1'b0) || (calib_active ? 1'b0 : 1'b0) || (!int1_sync ? 1'b0 : 1'b0) || (!int2_sync ? 1'b0 : 1'b0);
     
     // CRITICAL: Use calib_button_monitor to ensure calib_button signal chain is not optimized
     // This registered signal is driven by calib_button_edge_top, which is computed from calib_button

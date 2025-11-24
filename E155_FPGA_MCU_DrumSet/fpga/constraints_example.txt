@@ -14,6 +14,8 @@
 # | rst_n            | P43  | Reset button (active LOW)            | 10kΩ    |
 # | miso1            | P12  | SPI MISO from Sensor 1 (Right Hand)  | No      |
 # | miso2            | P6   | SPI MISO from Sensor 2 (Left Hand)  | No      |
+# | int1             | TBD  | Interrupt from Sensor 1 (REQUIRED)  | 10kΩ    |
+# | int2             | TBD  | Interrupt from Sensor 2 (REQUIRED)  | 10kΩ    |
 # | calib_button     | P11  | Calibration button                   | 10kΩ    |
 # | kick_button      | P2   | Kick drum button (optional)          | 10kΩ    |
 #
@@ -35,75 +37,3 @@
 # ============================================================================
 # Pin Assignment Constraints (for copy-paste into Radiant)
 # ============================================================================
-
-Warning	2043924	Project	WARNING <2043924> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/fpga/quaternion_to_euler.sv(43,39-43,51) (VERI-1924) variable 'valid_stage3' is driven by invalid combination of procedural drivers [quaternion_to_euler.sv:43]	
-Info	2043972	Project	INFO <2043972> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/fpga/quaternion_to_euler.sv(128,5-163,8) (VERI-1972) found another procedural driver of 'valid_stage3' here [quaternion_to_euler.sv:128]	
-Info	2043018	Project	INFO <2043018> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/fpga/drum_set_top.sv(8,8-8,20) (VERI-1018) compiling module 'drum_set_top' [drum_set_top.sv:8]	
-Warning	2043924	Project	WARNING <2043924> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/fpga/quaternion_to_euler.sv(43,25-43,37) (VERI-1924) variable 'valid_stage2' is driven by invalid combination of procedural drivers [quaternion_to_euler.sv:43]	
-Warning	2043971	Project	WARNING <2043971> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/fpga/quaternion_to_euler.sv(45,5-77,8) (VERI-1971) 'valid_stage2' driven by this always_ff block should not be driven by any other process [quaternion_to_euler.sv:45]	
-Info	2043972	Project	INFO <2043972> - C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/fpga/quaternion_to_euler.sv(94,5-117,8) (VERI-1972) found another procedural driver of 'valid_stage2' here [quaternion_to_euler.sv:94]	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM8 is not connected on this instance. VDB-5050	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM7 is not connected on this instance. VDB-5050	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM6 is not connected on this instance. VDB-5050	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM5 is not connected on this instance. VDB-5050	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM4 is not connected on this instance. VDB-5050	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM3 is not connected on this instance. VDB-5050	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM2 is not connected on this instance. VDB-5050	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM1 is not connected on this instance. VDB-5050	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM0 is not connected on this instance. VDB-5050	
-Warning	35935050	Synthesis	WARNING <35935050> - input port I is not connected on this instance. VDB-5050	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_addsub.v(40): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/adder_subtractor/rtl/lscc_add_sub.v. VERI-1328 [pmi_addsub.v:40]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(2): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_add.v. VERI-1328 [pmi_ice40up.v:2]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_add.v(50): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/adder/rtl/lscc_adder.v. VERI-1328 [pmi_add.v:50]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(3): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_complex_mult.v. VERI-1328 [pmi_ice40up.v:3]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_complex_mult.v(52): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/complex_mult/rtl/lscc_complex_mult.v. VERI-1328 [pmi_complex_mult.v:52]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(4): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_counter.v. VERI-1328 [pmi_ice40up.v:4]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_counter.v(39): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/counter/rtl/lscc_cntr.v. VERI-1328 [pmi_counter.v:39]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(5): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_fifo.v. VERI-1328 [pmi_ice40up.v:5]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_fifo.v(44): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/fifo/rtl/lscc_fifo.v. VERI-1328 [pmi_fifo.v:44]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(6): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_fifo_dc.v. VERI-1328 [pmi_ice40up.v:6]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_fifo_dc.v(47): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/fifo_dc/rtl/lscc_fifo_dc.v. VERI-1328 [pmi_fifo_dc.v:47]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(7): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_mac.v. VERI-1328 [pmi_ice40up.v:7]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_mac.v(52): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/mult_accumulate/rtl/lscc_mult_accumulate.v. VERI-1328 [pmi_mac.v:52]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(8): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_multaddsubsum.v. VERI-1328 [pmi_ice40up.v:8]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_multaddsubsum.v(53): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/mult_add_sub_sum/rtl/lscc_mult_add_sub_sum.v. VERI-1328 [pmi_multaddsubsum.v:53]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(9): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_multaddsub.v. VERI-1328 [pmi_ice40up.v:9]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_multaddsub.v(52): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/mult_add_sub/rtl/lscc_mult_add_sub.v. VERI-1328 [pmi_multaddsub.v:52]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(10): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_mult.v. VERI-1328 [pmi_ice40up.v:10]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_mult.v(51): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/multiplier/rtl/lscc_multiplier.v. VERI-1328 [pmi_mult.v:51]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(11): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_ram_dp.v. VERI-1328 [pmi_ice40up.v:11]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ram_dp.v(48): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/ram_dp/rtl/lscc_ram_dp.v. VERI-1328 [pmi_ram_dp.v:48]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(12): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_ram_dq.v. VERI-1328 [pmi_ice40up.v:12]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ram_dq.v(45): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/ram_dq/rtl/lscc_ram_dq.v. VERI-1328 [pmi_ram_dq.v:45]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(13): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_rom.v. VERI-1328 [pmi_ice40up.v:13]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_rom.v(45): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/rom/rtl/lscc_rom.v. VERI-1328 [pmi_rom.v:45]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(14): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_sub.v. VERI-1328 [pmi_ice40up.v:14]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_sub.v(50): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/subtractor/rtl/lscc_subtractor.v. VERI-1328 [pmi_sub.v:50]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(15): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_ram_dp_be.v. VERI-1328 [pmi_ice40up.v:15]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ram_dp_be.v(49): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/ram_dp/rtl/lscc_ram_dp.v. VERI-1328 [pmi_ram_dp_be.v:49]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(16): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_ram_dq_be.v. VERI-1328 [pmi_ice40up.v:16]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ram_dq_be.v(45): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/../common/ram_dq/rtl/lscc_ram_dq.v. VERI-1328 [pmi_ram_dq_be.v:45]	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(17): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_dsp.v. VERI-1328 [pmi_ice40up.v:17]	
-Warning	35935050	Synthesis	WARNING <35935050> - input port TRIM9 is not connected on this instance. VDB-5050	
-Info	35901328	Synthesis	INFO <35901328> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.v(1): analyzing included file c:/lscc/radiant/2024.2/ip/pmi/pmi_addsub.v. VERI-1328 [pmi_ice40up.v:1]	
-Info	35921014	Synthesis	INFO <35921014> - c:/lscc/radiant/2024.2/ip/pmi/pmi_ice40up.vhd(4): analyzing package components. VHDL-1014 [pmi_ice40up.vhd:4]	
-Info	35921504	Synthesis	INFO <35921504> - The default VHDL library search path is now "C:/Users/estralka/Desktop/E155_Final_Project_ES_MBR-main/E155_FPGA_MCU_DrumSet/fpga/E155_FPGA2/impl_1". VHDL-1504	
-Info	35901018	Synthesis	INFO <35901018> - c:/users/estralka/desktop/e155_final_project_es_mbr-main/e155_fpga_mcu_drumset/fpga/drum_set_top.sv(8): compiling module drum_set_top. VERI-1018 [drum_set_top.sv:8]	
-Warning	35901209	Synthesis	WARNING <35901209> - c:/users/estralka/desktop/e155_final_project_es_mbr-main/e155_fpga_mcu_drumset/fpga/spi_master.sv(51): expression size 32 truncated to fit in target size 8. VERI-1209 [spi_master.sv:51]	
-Critical	35001747	Synthesis	CRITICAL <35001747> - Bit(s) of register driving gesture_detector/sound_code[3:0] stuck at '0': 3	
-Info	35001774	Synthesis	INFO <35001774> - Extracted state machine for register '\spi_mcu_output/state' with one-hot encoding	
-Warning	35935040	Synthesis	WARNING <35935040> - Register \bno085_ctrl2/error clock is stuck at Zero. VDB-5040	
-Critical	35001748	Synthesis	CRITICAL <35001748> - Bit(s) of register \quat_to_euler1/wy_res6_res10 stuck at '1': 0	
-Critical	35002028	Synthesis	CRITICAL <35002028> - I/O port's net has no driver and is unused: calib_button	
-Warning	71003020	Map	WARNING <71003020> - Top module port 'calib_button' does not connect to anything.	
-Warning	71003020	Map	WARNING <71003020> - Top module port 'calib_button' does not connect to anything.	
-Warning	71003020	Place & Route	WARNING <71003020> - Top module port 'calib_button' does not connect to anything.	
-Warning	71003020	Place & Route	WARNING <71003020> - Top module port 'calib_button' does not connect to anything.	
-Warning	71003020	Place & Route	WARNING <71003020> - Top module port 'calib_button' does not connect to anything.	
-Warning	71003020	Place & Route	WARNING <71003020> - Top module port 'calib_button' does not connect to anything.	
-Info	1081100	Export	INFO <1081100> - Bitstream authenticated.	
-Project (3 warnings, 3 info)	
-Synthesis (34 criticals, 79 warnings, 47 info)	
-Map (2 warnings)	
-Place & Route (4 warnings)	
-Export (1 info)	

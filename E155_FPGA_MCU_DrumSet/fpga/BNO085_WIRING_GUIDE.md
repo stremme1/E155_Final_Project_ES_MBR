@@ -32,12 +32,18 @@ SCL (SCK)       →    P20          →    sclk1 (SPI clock)
 DI (MOSI)       →    P13          →    mosi1 (FPGA sends data)
 SDA (MISO)      →    P12          →    miso1 (sensor sends data)
 CS              →    P18          →    cs_n1 (chip select, with 10kΩ pull-up)
-INT             →    (unconnected) →  Not used (polling mode)
+INT             →    (assign pin) →    int1 (REQUIRED for stable SPI - active LOW)
 RST             →    3.3V         →    Reset (keep HIGH, active LOW)
+P0              →    3.3V         →    Mode select (HIGH for SPI mode) - CRITICAL!
+P1              →    3.3V         →    Mode select (HIGH for SPI mode) - CRITICAL!
 VIN             →    3.3V or 5V   →    Power supply
 GND             →    GND          →    Ground (common)
 ADR             →    (unconnected) →  Not used (SPI mode)
 ```
+
+**CRITICAL:** 
+- **P0 and P1 MUST be HIGH (3.3V) for SPI mode** - Without this, sensor will be in I2C mode!
+- **INT pin is REQUIRED** - Adafruit documentation states it's required for stable SPI operation
 
 **Important Notes:**
 - **DI** on BNO085 = **MOSI** (data FROM FPGA TO sensor)
@@ -57,12 +63,18 @@ SCL (SCK)       →    P4           →    sclk2 (SPI clock)
 DI (MOSI)       →    P47          →    mosi2 (FPGA sends data)
 SDA (MISO)      →    P6           →    miso2 (sensor sends data)
 CS              →    P48          →    cs_n2 (chip select, with 10kΩ pull-up)
-INT             →    (unconnected) →    Not used (polling mode)
+INT             →    (assign pin) →    int2 (REQUIRED for stable SPI - active LOW)
 RST             →    3.3V         →    Reset (keep HIGH, active LOW)
+P0              →    3.3V         →    Mode select (HIGH for SPI mode) - CRITICAL!
+P1              →    3.3V         →    Mode select (HIGH for SPI mode) - CRITICAL!
 VIN             →    3.3V or 5V   →    Power supply
 GND             →    GND          →    Ground (common)
 ADR             →    (unconnected) →    Not used (SPI mode)
 ```
+
+**CRITICAL:** 
+- **P0 and P1 MUST be HIGH (3.3V) for SPI mode** - Without this, sensor will be in I2C mode!
+- **INT pin is REQUIRED** - Adafruit documentation states it's required for stable SPI operation
 
 **Important Notes:**
 - **DI** on BNO085 = **MOSI** (data FROM FPGA TO sensor)
