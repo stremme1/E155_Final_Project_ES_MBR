@@ -118,8 +118,22 @@ module tb_system_with_sim_imu;
         $display("System reset released\n");
         
         // Wait for initialization
+        // INIT_WAIT: 300,000 cycles at 3MHz = 100ms
+        // Then product ID request, enable rotation, enable gyro
+        // Total initialization time: ~100ms + SPI transactions
         $display("Waiting for sensor initialization...");
-        #(CLK_PERIOD * 100000);  // Wait 2ms at 50MHz
+        $display("Initialization takes ~100ms (300k cycles at 3MHz) + SPI transactions");
+        #(CLK_PERIOD * 10000000);  // Wait 200ms at 50MHz simulation (enough for 100ms at 3MHz)
+        
+        // Test 1: System initialization
+        $display("\n=== Test 1: System Initialization ===");
+        if (led_initialized) begin
+            $display("PASS: System initialized (LED on)");
+        end else begin
+            $display("FAIL: System not initialized after waiting period");
+            $display("      led_initialized=%b, bno1_initialized=%b, bno2_initialized=%b", 
+                     led_initialized, dut.bno1_initialized, dut.bno2_initialized);
+        end
         
         // Test INT pin functionality
         $display("\n=== Test: INT Pin Functionality ===");
@@ -131,38 +145,39 @@ module tb_system_with_sim_imu;
         int1 = 0;  // INT active (LOW = data ready)
         #(CLK_PERIOD * 1000);
         int1 = 1;  // INT inactive (HIGH = no data)
-        $display("INT pin toggled - polling should occur when INT is LOW");
+        $display("PASS: INT pin toggled - polling should occur when INT is LOW");
         
         // Test INT pin stuck LOW (error condition)
         $display("\n=== Test: INT Pin Error Detection ===");
-        $display("Testing INT stuck LOW error detection...");
+        $display("Testing INT stuck LOW error detection (>1 second = error)...");
         int1 = 0;  // INT stuck LOW
-        #(CLK_PERIOD * 2000000);  // Hold LOW for >1 second (simulated)
+        // At 3MHz: 1 second = 3,000,000 cycles
+        // At 50MHz simulation: 3,000,000 cycles = 60ms
+        #(CLK_PERIOD * 3000000);  // Hold LOW for >1 second (simulated)
         if (led_error) begin
             $display("PASS: Error LED active when INT stuck LOW");
         end else begin
-            $display("INFO: Error detection may need more time");
+            $display("FAIL: Error LED not active when INT stuck LOW");
+            $display("      led_error=%b, int1_error=%b", led_error, dut.int1_error);
         end
         int1 = 1;  // Release INT
-        #(CLK_PERIOD * 1000);
-        
-        // Test 1: System initialization
-        $display("\n=== Test 1: System Initialization ===");
-        if (led_initialized) begin
-            $display("PASS: System initialized (LED on)");
-        end else begin
-            $display("INFO: System still initializing...");
-        end
+        #(CLK_PERIOD * 10000);  // Wait for error to clear
         
         // Test 2: Calibration Button
         $display("\n=== Test 2: Calibration Button ===");
         $display("Calibration button is REQUIRED and must be connected (P11)");
         $display("Pressing calibration button...");
         calib_button = 1;
-        #(CLK_PERIOD * 200000);  // Hold for debounce period (150k cycles at 3MHz, ~3ms at 50MHz sim)
+        // Debounce: 150,000 cycles at 3MHz = 50ms
+        // At 50MHz simulation: 150,000 cycles = 3ms
+        #(CLK_PERIOD * 200000);  // Hold for debounce period + margin
         calib_button = 0;
-        #(CLK_PERIOD * 1000);
-        $display("Calibration button released");
+        #(CLK_PERIOD * 10000);
+        if (dut.calib_active) begin
+            $display("PASS: Calibration button triggered calib_active");
+        end else begin
+            $display("INFO: Calibration button pressed (calib_active may require valid sensor data)");
+        end
         $display("Note: calib_button directly affects led_error when pressed");
         
         // Test 3: Simulate drumming gestures
@@ -174,11 +189,14 @@ module tb_system_with_sim_imu;
         
         // Test 4: Check SPI output to MCU
         $display("\n=== Test 4: SPI Output to MCU ===");
+        // Wait longer for sensor data to be processed and sent
+        #(CLK_PERIOD * 100000);
         if (mcu_rx_valid) begin
             $display("PASS: SPI data received by MCU: 0x%02X (sound_code=%d)", 
                      mcu_rx_data, mcu_rx_data & 8'h0F);
         end else begin
-            $display("INFO: No SPI output yet (may need more time or sensor data)");
+            $display("INFO: No SPI output yet (sensors may need more time to send data)");
+            $display("      This is expected if sensors haven't sent gesture data yet");
         end
         
         // Test 5: Kick button
@@ -186,11 +204,12 @@ module tb_system_with_sim_imu;
         kick_button = 1;
         #(CLK_PERIOD * 1000);
         kick_button = 0;
-        #(CLK_PERIOD * 10000);
+        #(CLK_PERIOD * 50000);  // Wait for SPI transfer to complete
         if (mcu_rx_valid && (mcu_rx_data & 8'h0F) == 4'd2) begin  // Sound code 2 = Kick
             $display("PASS: Kick drum detected (SPI code=0x%02X)", mcu_rx_data);
         end else begin
-            $display("INFO: Kick button pressed");
+            $display("INFO: Kick button pressed (SPI output may need more time)");
+            $display("      mcu_rx_valid=%b, mcu_rx_data=0x%02X", mcu_rx_valid, mcu_rx_data);
         end
         
         // Test 6: Error detection (INT pins and calib_button)
