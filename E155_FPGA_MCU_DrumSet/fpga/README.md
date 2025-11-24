@@ -4,7 +4,7 @@ This directory contains the SystemVerilog implementation of a gesture detection 
 
 ## Overview
 
-This implementation ports the gesture detection logic from the Arduino-based system (`main.c`) to SystemVerilog for FPGA execution. The system uses two BNO085 sensors (one per drumstick) connected via SPI, processes quaternion and gyroscope data, and outputs drum sound codes via UART.
+This implementation ports the gesture detection logic from the Arduino-based system (`main.c`) to SystemVerilog for FPGA execution. The system uses two BNO085 sensors (one per drumstick) connected via SPI, processes quaternion and gyroscope data, and outputs drum sound codes via SPI to an MCU.
 
 ## System Architecture
 
@@ -13,9 +13,9 @@ BNO085 Sensor 1 (Right Hand)
     ↓ SPI
 SPI Master 1 → BNO085 Controller 1 → Quaternion to Euler → Gesture Detector
                                                                   ↓
-                                                              UART TX
+                                                              SPI to MCU
                                                                   ↓
-BNO085 Sensor 2 (Left Hand)                                 Python Script
+BNO085 Sensor 2 (Left Hand)                                    MCU
     ↓ SPI                                                         ↓
 SPI Master 2 → BNO085 Controller 2 → Quaternion to Euler → Audio Playback
 ```
@@ -47,16 +47,18 @@ SPI Master 2 → BNO085 Controller 2 → Quaternion to Euler → Audio Playback
   - Gyroscope thresholds (strike detection)
 - Outputs sound codes (0-7) matching the original system
 
-### 5. `uart_tx.sv`
-- UART transmitter for outputting sound codes
-- Configurable baud rate (default: 115200)
-- Converts sound codes to ASCII characters
+### 5. `spi_to_mcu.sv`
+- SPI master module for MCU communication
+- SPI Mode 0 (CPOL=0, CPHA=0)
+- Sends 8-bit sound codes to MCU
+- Handles CS assertion/deassertion
 
 ### 6. `drum_set_top.sv`
 - Top-level module integrating all components
 - Manages two BNO085 sensors
 - Handles calibration button
-- Outputs to UART
+- Outputs to MCU via SPI
+- Uses internal HSOSC for clock generation (3MHz)
 
 ## Sound Code Mapping
 
@@ -98,18 +100,22 @@ SPI Master 2 → BNO085 Controller 2 → Quaternion to Euler → Audio Playback
 - **VIN**: 3.3V or 5V (board has regulator)
 - **GND**: Ground
 - **SCL/SCK**: SPI Clock (from FPGA)
-- **SDA/MOSI**: SPI Master Out (from FPGA)
-- **SDO/MISO**: SPI Master In (to FPGA)
-- **CS**: Chip Select (from FPGA, active low)
-- **INT**: Interrupt (optional, to FPGA)
-- **RST**: Reset (optional, to FPGA or pull-up)
+- **DI/MOSI**: SPI Master Out (from FPGA)
+- **SDA/MISO**: SPI Master In (to FPGA)
+- **CS**: Chip Select (from FPGA, active low, 10kΩ pull-up)
+- **INT**: Interrupt (REQUIRED for stable SPI, to FPGA, 10kΩ pull-up)
+- **RST**: Reset (tie to 3.3V, active low, keep HIGH)
+- **P0**: Mode select (MUST be HIGH/3.3V for SPI mode - CRITICAL!)
+- **P1**: Mode select (MUST be HIGH/3.3V for SPI mode - CRITICAL!)
 
 ### FPGA Pin Assignments
-Assign pins based on your FPGA board:
-- SPI clocks, MOSI, MISO, CS for each sensor
-- UART TX pin
-- Button inputs (calibration, kick)
-- Status LEDs (optional)
+See `constraints_example.txt` for complete pin assignments:
+- **Sensor 1**: sclk1 (P20), mosi1 (P13), miso1 (P12), cs_n1 (P18), int1 (P9)
+- **Sensor 2**: sclk2 (P4), mosi2 (P47), miso2 (P6), cs_n2 (P48), int2 (P3)
+- **MCU SPI**: mcu_sclk (P21), mcu_mosi (P10), mcu_cs_n (P19)
+- **Buttons**: calib_button (P11), kick_button (P2)
+- **LEDs**: led_initialized (P28), led_error (P38)
+- **Reset**: rst_n (P43, active LOW)
 
 ## Setup Instructions
 
@@ -119,17 +125,21 @@ Assign pins based on your FPGA board:
    # Add all .sv files to your project
    ```
 
-2. **Set clock frequency**:
-   - Update `CLK_FREQ` in `uart_tx.sv` to match your system clock
-   - Adjust `CLK_DIV` in `spi_master.sv` to achieve ~3MHz SPI clock
+2. **Clock configuration**:
+   - System uses internal HSOSC (48MHz) divided to 3MHz
+   - SPI clock is ~3MHz (meets BNO085 specifications)
+   - For simulation, uncomment simulation clock in `drum_set_top.sv`
 
 3. **Configure BNO085 sensors**:
-   - Ensure sensors are configured for SPI mode (not I2C)
-   - Check that ADR pins are set correctly if using multiple sensors
+   - **CRITICAL**: Connect P0 and P1 pins to 3.3V (HIGH) for SPI mode
+   - Connect INT pins to FPGA (P9 for sensor 1, P3 for sensor 2) - REQUIRED for stable SPI
+   - Connect RST to 3.3V (keep HIGH, active LOW)
+   - See `BNO085_WIRING_GUIDE.md` for complete wiring instructions
 
-4. **Connect to Python script**:
-   - Use the existing `play_sound.py` script
-   - Update serial port in Python script to match your UART connection
+4. **Connect MCU**:
+   - FPGA acts as SPI master, MCU as SPI slave
+   - MCU receives 8-bit sound codes via SPI Mode 0
+   - See `HARDWARE_IMPLEMENTATION_GUIDE.md` for MCU connection details
 
 5. **Calibration**:
    - Press calibration button while holding drumsticks in desired "zero" position
