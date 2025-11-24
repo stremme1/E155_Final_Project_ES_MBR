@@ -297,6 +297,19 @@ module drum_set_top (
     
     assign kick_button_edge = kick_button && !kick_button_prev;
     
+    // Synchronize calib_button at top level to prevent optimization
+    // This ensures the signal is recognized as used by synthesis tools
+    // CRITICAL: Use calib_button directly in sequential logic, similar to kick_button
+    logic calib_button_sync;
+    
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            calib_button_sync <= 1'b0;
+        end else begin
+            calib_button_sync <= calib_button;  // Direct use of calib_button port
+        end
+    end
+    
     // Use calib_button directly in top-level to ensure Radiant recognizes it
     // Must use it in a way that affects an output and can't be optimized away
     // Simply synchronizing it isn't enough - need to actually use it
@@ -381,10 +394,12 @@ module drum_set_top (
         end
     end
     
-    // Use calib_button directly - if pressed, it affects error LED
-    // This ensures calib_button is recognized as used
+    // Use calib_button_sync in error LED to create clear signal path
+    // CRITICAL: calib_button -> calib_button_sync (sequential) -> led_error (combinational)
+    // This creates a clear signal path that synthesis tools cannot optimize away
+    // The sequential use of calib_button ensures it's recognized as a required input
     assign led_error = bno1_error || bno2_error || int1_error || int2_error || 
-                      (calib_button && calib_active);  // Use calib_button directly
+                      (calib_button_sync && calib_active);
     
 endmodule
 
