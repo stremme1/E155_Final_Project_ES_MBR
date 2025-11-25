@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module spi_test_top (
     input  logic        rst_n,
     
@@ -6,6 +8,7 @@ module spi_test_top (
     output logic        mosi1,
     input  logic        miso1,
     output logic        cs_n1,
+    output logic        ps0_1,  // Added PS0/WAKE pin
     input  logic        int1,
     
     // Debug / Status LEDs
@@ -68,6 +71,7 @@ module spi_test_top (
         .spi_rx_data(spi_rx_data),
         .spi_busy(spi_busy),
         .cs_n(cs_n1),
+        .ps0_wake(ps0_1),
         .int_n(int1),
         .quat_valid(quat_valid),
         .quat_w(quat_w),

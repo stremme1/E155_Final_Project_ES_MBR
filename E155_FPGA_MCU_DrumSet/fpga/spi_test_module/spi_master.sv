@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 // SPI Master Module for BNO085 Communication
 // BNO085 SPI: Mode 3 (CPOL=1, CPHA=1), MSB first, 3MHz max
 

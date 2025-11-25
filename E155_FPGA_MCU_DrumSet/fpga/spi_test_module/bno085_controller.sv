@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 
 // BNO085 Controller Module
 // Handles SHTP (Sensor Hub Transport Protocol) communication over SPI
@@ -16,7 +17,8 @@ module bno085_controller (
     input  logic        spi_rx_valid,
     input  logic [7:0]  spi_rx_data,
     input  logic        spi_busy,
-    output logic        cs_n,   // Chip Select (active low) - Controlled here for packet framing
+    output logic        cs_n,     // Chip Select (active low)
+    output logic        ps0_wake, // PS0/WAKE (active low)
 
     // INT pin (REQUIRED for stable SPI operation per Adafruit documentation)
     input  logic        int_n,  // Active LOW interrupt - goes LOW when data ready
@@ -45,9 +47,11 @@ module bno085_controller (
     
     typedef enum logic [3:0] {
         IDLE,
-        INIT_WAIT,
-        INIT_SEND_CMD,
-        INIT_DELAY,
+        INIT_WAIT_RESET,
+        INIT_WAKE,
+        INIT_WAIT_INT,
+        INIT_SEND_BODY,
+        INIT_DONE_CHECK,
         WAIT_DATA,
         READ_HEADER_START,
         READ_HEADER,
@@ -62,12 +66,12 @@ module bno085_controller (
     logic [7:0] current_report_id;
     
     // Reduced counter width (19 bits is enough for >300,000 counts)
-    logic [18:0] init_counter;
+    logic [18:0] delay_counter;
     
     // Command selection
     logic [1:0] cmd_select; // 0=ProdID, 1=Rot, 2=Gyro
     
-    // Handshake state
+    // Handshake state for SPI
     logic [1:0] spi_handshake;
     
     // Temporary storage for parsing
@@ -158,14 +162,15 @@ module bno085_controller (
     
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            state <= INIT_WAIT;
+            state <= INIT_WAIT_RESET;
             initialized <= 1'b0;
             error <= 1'b0;
-            init_counter <= 19'd0;
+            delay_counter <= 19'd0;
             spi_start <= 1'b0;
             spi_tx_valid <= 1'b0;
             byte_cnt <= 8'd0;
             cs_n <= 1'b1;
+            ps0_wake <= 1'b1; // Must be high at reset for SPI mode
             quat_valid <= 1'b0;
             gyro_valid <= 1'b0;
             spi_handshake <= 2'd0;
@@ -192,72 +197,89 @@ module bno085_controller (
             gyro_valid <= 1'b0;
             
             case (state)
-                INIT_WAIT: begin
+                // 1. Wait after reset to ensure sensor is ready (~100ms)
+                INIT_WAIT_RESET: begin
                     cs_n <= 1'b1;
-                    // Wait ~100ms at 3MHz (300,000 ticks)
-                    if (init_counter < 19'd300_000) begin
-                        init_counter <= init_counter + 1;
+                    ps0_wake <= 1'b1;
+                    if (delay_counter < 19'd300_000) begin
+                        delay_counter <= delay_counter + 1;
                     end else begin
-                        state <= INIT_SEND_CMD;
-                        init_counter <= 19'd0;
+                        state <= INIT_WAKE;
+                        delay_counter <= 19'd0;
                         cmd_select <= 2'd0; // Start with ProdID
+                    end
+                end
+
+                // 2. Wake the sensor (PS0 Low)
+                INIT_WAKE: begin
+                    ps0_wake <= 1'b0; // Drive Low to wake
+                    delay_counter <= 19'd0;
+                    // If INT is already low, sensor is awake, proceed
+                    if (!int_n_sync) begin
+                        state <= INIT_WAIT_INT;
+                    end else begin
+                        // Otherwise wait for INT to go low
+                        // Add timeout? For now just wait.
+                        state <= INIT_WAIT_INT;
+                    end
+                end
+
+                // 3. Wait for INT low (Sensor Ready)
+                INIT_WAIT_INT: begin
+                    if (!int_n_sync) begin
+                        cs_n <= 1'b0; // Select chip
+                        ps0_wake <= 1'b1; // Release Wake (optional, but good practice once CS is asserted)
                         byte_cnt <= 8'd0;
-                        // Pre-assert CS to wake
-                        cs_n <= 1'b0;
+                        spi_handshake <= 0;
+                        state <= INIT_SEND_BODY;
                     end
                 end
                 
-                INIT_SEND_CMD: begin
-                    // STRICT HANDSHAKE: Wait for INT low before clocking
-                    if (byte_cnt == 0 && int_n_sync) begin
-                        cs_n <= 1'b0;
-                        // Stay here until INT goes low
-                    end else begin
-                        // INT is low (or we are mid-transfer), proceed
-                        cs_n <= 1'b0;
-                        
-                        if (spi_handshake == 0) begin
-                            if (!spi_busy && spi_tx_ready) begin
-                                if (byte_cnt < get_cmd_len(cmd_select)) begin
-                                    spi_tx_data <= get_init_byte(cmd_select, byte_cnt);
-                                    spi_tx_valid <= 1'b1;
-                                    spi_start <= 1'b1;
-                                    spi_handshake <= 1;
-                                end else begin
-                                    // Done sending command
-                                    cs_n <= 1'b1;
-                                    byte_cnt <= 8'd0;
-                                    state <= INIT_DELAY;
-                                    init_counter <= 19'd0;
-                                end
+                // 4. Send Command Body
+                INIT_SEND_BODY: begin
+                    cs_n <= 1'b0;
+                    
+                    if (spi_handshake == 0) begin
+                        if (!spi_busy && spi_tx_ready) begin
+                            if (byte_cnt < get_cmd_len(cmd_select)) begin
+                                spi_tx_data <= get_init_byte(cmd_select, byte_cnt);
+                                spi_tx_valid <= 1'b1;
+                                spi_start <= 1'b1;
+                                spi_handshake <= 1;
+                            end else begin
+                                // Done sending
+                                cs_n <= 1'b1;
+                                byte_cnt <= 8'd0;
+                                state <= INIT_DONE_CHECK;
+                                delay_counter <= 19'd0;
                             end
-                        end else if (spi_handshake == 1) begin
-                            spi_start <= 1'b1; // Hold start
-                            spi_tx_valid <= 1'b1;
-                            if (spi_busy) begin
-                                spi_start <= 1'b0;
-                                spi_handshake <= 2;
-                            end
-                        end else if (spi_handshake == 2) begin
-                            if (!spi_busy) begin
-                                byte_cnt <= byte_cnt + 1;
-                                spi_handshake <= 0;
-                            end
+                        end
+                    end else if (spi_handshake == 1) begin
+                        spi_start <= 1'b1; // Hold start
+                        spi_tx_valid <= 1'b1;
+                        if (spi_busy) begin
+                            spi_start <= 1'b0;
+                            spi_handshake <= 2;
+                        end
+                    end else if (spi_handshake == 2) begin
+                        if (!spi_busy) begin
+                            byte_cnt <= byte_cnt + 1;
+                            spi_handshake <= 0;
                         end
                     end
                 end
                 
-                INIT_DELAY: begin
+                // 5. Check if more commands or done
+                INIT_DONE_CHECK: begin
                     cs_n <= 1'b1;
-                    // Small delay between commands (10ms = 30,000 ticks)
-                    if (init_counter < 19'd30_000) begin
-                        init_counter <= init_counter + 1;
+                    // Delay 10ms between commands
+                    if (delay_counter < 19'd30_000) begin
+                        delay_counter <= delay_counter + 1;
                     end else begin
-                        init_counter <= 19'd0;
+                        delay_counter <= 19'd0;
                         if (cmd_select < 2'd2) begin
                             cmd_select <= cmd_select + 1;
-                            state <= INIT_SEND_CMD;
-                            cs_n <= 1'b0; // Wake up for next cmd
+                            state <= INIT_WAKE; // Go back to Wake for next command
                         end else begin
                             initialized <= 1'b1;
                             state <= WAIT_DATA;
@@ -265,9 +287,10 @@ module bno085_controller (
                     end
                 end
                 
+                // 6. Normal Operation: Wait for Data Ready
                 WAIT_DATA: begin
                     cs_n <= 1'b1;
-                    // Wait for INT pin LOW (Data Ready)
+                    ps0_wake <= 1'b1; // Ensure wake is released
                     if (!int_n_sync) begin
                         state <= READ_HEADER_START;
                         byte_cnt <= 8'd0;
@@ -276,14 +299,13 @@ module bno085_controller (
 
                 READ_HEADER_START: begin
                     cs_n <= 1'b0;
-                    // Redundant check, but safe: wait for INT low
                     if (!int_n_sync) begin
                         state <= READ_HEADER;
-                        // Start first byte read
-                        spi_tx_data <= 8'h00;
-                        spi_tx_valid <= 1'b1;
+                        spi_tx_data <= 8'h00; 
+                        spi_tx_valid <= 1'b1; 
                         spi_start <= 1'b1;
                         byte_cnt <= 8'd0;
+                        spi_handshake <= 0; // Re-use handshake logic if needed, or rely on master auto-seq
                     end
                 end
                 
@@ -306,13 +328,12 @@ module bno085_controller (
                                 spi_tx_data <= 8'h00; spi_tx_valid <= 1; spi_start <= 1;
                             end
                             3: begin
-                                // seq_num <= spi_rx_data; // Unused, optimize out
                                 byte_cnt <= 8'd0;
                                 if (packet_length > 4) begin
                                     state <= READ_PAYLOAD;
                                     spi_tx_data <= 8'h00; spi_tx_valid <= 1; spi_start <= 1;
                                 end else begin
-                                    cs_n <= 1'b1; // Short packet
+                                    cs_n <= 1'b1; 
                                     state <= WAIT_DATA;
                                 end
                             end
@@ -328,7 +349,6 @@ module bno085_controller (
                                 if (byte_cnt == 0) begin
                                     current_report_id <= spi_rx_data;
                                 end else if (current_report_id == REPORT_ID_ROTATION_VECTOR) begin
-                                    // Rotation Vector (0x05)
                                     case (byte_cnt)
                                         4: temp_byte_lsb <= spi_rx_data;
                                         5: quat_x <= {spi_rx_data, temp_byte_lsb};
@@ -343,7 +363,6 @@ module bno085_controller (
                                         end
                                     endcase
                                 end else if (current_report_id == REPORT_ID_GYROSCOPE) begin
-                                    // Gyroscope (0x01)
                                     case (byte_cnt)
                                         4: temp_byte_lsb <= spi_rx_data;
                                         5: gyro_x <= {spi_rx_data, temp_byte_lsb};
