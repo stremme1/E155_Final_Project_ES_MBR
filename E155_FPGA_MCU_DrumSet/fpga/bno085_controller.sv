@@ -1,3 +1,6 @@
+
+Error	35931000	Synthesis	ERROR <35931000> - c:/users/estralka/desktop/e155/e155_final_project_es_mbr-main/e155_fpga_mcu_drumset/fpga/quaternion_to_euler.sv(177): net gnd is constantly driven from multiple places at instance \quat_to_euler1/pitch_i0_i0, on port q. VDB-1000 [quaternion_to_euler.sv:177]	
+
 // BNO085 Controller Module
 // Handles SHTP (Sensor Hub Transport Protocol) communication over SPI
 // Reads Rotation Vector (quaternion) and Gyroscope reports
