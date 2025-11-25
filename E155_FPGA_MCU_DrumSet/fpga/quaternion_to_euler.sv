@@ -44,6 +44,7 @@ module quaternion_to_euler (
         if (!rst_n) begin
             valid_stage1 <= 1'b0;
             valid_out <= 1'b0;
+            // roll, pitch, yaw reset moved to their own block to avoid multi-driver error
         end else begin
             valid_stage1 <= valid_in;
             valid_out <= valid_stage3;
