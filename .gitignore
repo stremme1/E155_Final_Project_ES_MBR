@@ -9,3 +9,4 @@ test_fpga_audit
 test_gyro
 *.vvp
 test_*
+*.vcd
