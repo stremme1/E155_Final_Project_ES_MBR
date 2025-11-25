@@ -1,9 +1,8 @@
 
-Error	35931000	Synthesis	ERROR <35931000> - c:/users/estralka/desktop/e155/e155_final_project_es_mbr-main/e155_fpga_mcu_drumset/fpga/quaternion_to_euler.sv(177): net gnd is constantly driven from multiple places at instance \quat_to_euler1/pitch_i0_i0, on port q. VDB-1000 [quaternion_to_euler.sv:177]	
-
 // BNO085 Controller Module
 // Handles SHTP (Sensor Hub Transport Protocol) communication over SPI
 // Reads Rotation Vector (quaternion) and Gyroscope reports
+// Optimized for low resource usage (no large buffers)
 
 module bno085_controller (
     input  logic        clk,
@@ -67,7 +66,6 @@ module bno085_controller (
         READ_HEADER_START,
         READ_HEADER,
         READ_PAYLOAD,
-        PARSE_REPORT,
         ERROR_STATE
     } state_t;
     
@@ -76,10 +74,11 @@ module bno085_controller (
     logic [15:0] packet_length;
     logic [7:0] seq_num;
     logic [7:0] channel;
-    logic [7:0] report_id;
-    // Use BRAM for data buffer - 64 bytes
-    (* ram_style = "block" *)
-    logic [7:0] data_buffer [0:63];
+    logic [7:0] current_report_id;
+    
+    // REMOVED: Large data buffer to save resources
+    // logic [7:0] data_buffer [0:63];
+    
     logic [31:0] init_counter;
     
     // INT pin handling
@@ -90,6 +89,9 @@ module bno085_controller (
     // 1: Start asserted, waiting for BUSY
     // 2: Start deasserted, waiting for DONE (!BUSY)
     logic [1:0] spi_handshake;
+    
+    // Temporary storage for parsing
+    logic [7:0] temp_byte_lsb;
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -117,6 +119,17 @@ module bno085_controller (
             quat_valid <= 1'b0;
             gyro_valid <= 1'b0;
             spi_handshake <= 2'd0;
+            current_report_id <= 8'd0;
+            temp_byte_lsb <= 8'd0;
+            
+            quat_w <= 16'd0;
+            quat_x <= 16'd0;
+            quat_y <= 16'd0;
+            quat_z <= 16'd0;
+            gyro_x <= 16'd0;
+            gyro_y <= 16'd0;
+            gyro_z <= 16'd0;
+            
         end else begin
             // Default assignments (overridden in states)
             // spi_start must be held in state 1, cleared in 0 and 2
@@ -124,6 +137,10 @@ module bno085_controller (
                 spi_start <= 1'b0;
                 spi_tx_valid <= 1'b0;
             end
+            
+            // Pulse outputs
+            quat_valid <= 1'b0;
+            gyro_valid <= 1'b0;
             
             case (state)
                 INIT_WAIT: begin
@@ -140,8 +157,6 @@ module bno085_controller (
                     // SHTP Wake-up: Assert CS, Wait for INT low
                     cs_n <= 1'b0;
                     // STRICT HANDSHAKE: Do NOT proceed until INT goes low
-                    // The previous timeout (|| init_counter > 30000) caused us to clock
-                    // before the sensor was ready, resulting in no MISO data.
                     if (!int_n_sync) begin 
                         state <= INIT_PRODUCT_ID;
                         byte_cnt <= 8'd0;
@@ -149,7 +164,6 @@ module bno085_controller (
                         // Pre-load first byte data to ensure stability before start
                         spi_tx_data <= 8'd4; 
                     end 
-                    // Optional: If stuck here for >1s, we could reset, but strictly waiting is safer for now
                 end
 
                 INIT_PRODUCT_ID: begin
@@ -381,52 +395,61 @@ module bno085_controller (
                 READ_PAYLOAD: begin
                     if (spi_rx_valid && !spi_busy) begin
                         if (byte_cnt < packet_length - 4 && byte_cnt < 64) begin
-                            data_buffer[byte_cnt] <= spi_rx_data;
+                            // Parse on the fly based on channel and report ID
+                            
+                            if (channel == CHANNEL_REPORTS) begin
+                                if (byte_cnt == 0) begin
+                                    current_report_id <= spi_rx_data;
+                                end else if (current_report_id == REPORT_ID_ROTATION_VECTOR) begin
+                                    // Rotation Vector (0x05):
+                                    // Byte 4-5: i (X), 6-7: j (Y), 8-9: k (Z), 10-11: real (W)
+                                    case (byte_cnt)
+                                        4: temp_byte_lsb <= spi_rx_data;
+                                        5: quat_x <= {spi_rx_data, temp_byte_lsb};
+                                        6: temp_byte_lsb <= spi_rx_data;
+                                        7: quat_y <= {spi_rx_data, temp_byte_lsb};
+                                        8: temp_byte_lsb <= spi_rx_data;
+                                        9: quat_z <= {spi_rx_data, temp_byte_lsb};
+                                        10: temp_byte_lsb <= spi_rx_data;
+                                        11: begin
+                                            quat_w <= {spi_rx_data, temp_byte_lsb};
+                                            quat_valid <= 1'b1; // Pulse valid
+                                        end
+                                    endcase
+                                end else if (current_report_id == REPORT_ID_GYROSCOPE) begin
+                                    // Gyroscope (0x01):
+                                    // Byte 4-5: X, 6-7: Y, 8-9: Z
+                                    case (byte_cnt)
+                                        4: temp_byte_lsb <= spi_rx_data;
+                                        5: gyro_x <= {spi_rx_data, temp_byte_lsb};
+                                        6: temp_byte_lsb <= spi_rx_data;
+                                        7: gyro_y <= {spi_rx_data, temp_byte_lsb};
+                                        8: temp_byte_lsb <= spi_rx_data;
+                                        9: begin
+                                            gyro_z <= {spi_rx_data, temp_byte_lsb};
+                                            gyro_valid <= 1'b1; // Pulse valid
+                                        end
+                                    endcase
+                                end
+                            end
+
                             byte_cnt <= byte_cnt + 1;
                             
+                            // Decide if we need to read more
                             if (byte_cnt < packet_length - 5 && byte_cnt < 63) begin
                                 spi_tx_data <= 8'h00; spi_tx_valid <= 1; spi_start <= 1;
                             end else begin
                                 // Last byte read
                                 cs_n <= 1'b1;
                                 byte_cnt <= 8'd0;
-                                state <= PARSE_REPORT;
+                                state <= WAIT_DATA;
                             end
                         end else begin
                             cs_n <= 1'b1;
                             byte_cnt <= 8'd0;
-                            state <= PARSE_REPORT;
+                            state <= WAIT_DATA;
                         end
                     end
-                end
-                
-                PARSE_REPORT: begin
-                    // Parse logic
-                    if (channel == CHANNEL_REPORTS) begin
-                        // report_id is at data_buffer[0]
-                        // Use data_buffer[0] directly to avoid non-blocking assignment latency
-                        
-                        if (data_buffer[0] == REPORT_ID_ROTATION_VECTOR) begin
-                            // Rotation Vector (0x05):
-                            // Byte 4-5: i (X)
-                            // Byte 6-7: j (Y)
-                            // Byte 8-9: k (Z)
-                            // Byte 10-11: real (W)
-                            // Byte 12-13: Accuracy
-                            quat_x <= {data_buffer[5], data_buffer[4]};
-                            quat_y <= {data_buffer[7], data_buffer[6]};
-                            quat_z <= {data_buffer[9], data_buffer[8]};
-                            quat_w <= {data_buffer[11], data_buffer[10]};
-                            quat_valid <= 1'b1;
-                        end else if (data_buffer[0] == REPORT_ID_GYROSCOPE) begin
-                            gyro_x <= {data_buffer[5], data_buffer[4]};
-                            gyro_y <= {data_buffer[7], data_buffer[6]};
-                            gyro_z <= {data_buffer[9], data_buffer[8]};
-                            gyro_valid <= 1'b1;
-                        end
-                    end
-                    
-                    state <= WAIT_DATA;
                 end
                 
                 ERROR_STATE: begin
